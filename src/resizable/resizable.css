@@ -1,0 +1,55 @@
+.resizable-panes-container {
+    position: relative;
+    display:  flex;
+    width:    100%;
+    height:   100%;
+    overflow: hidden;
+}
+
+.horizontal.resizable-panes-container {
+    flex-direction: row;
+}
+.vertical.resizable-panes-container {
+    flex-direction: column;
+}
+
+div.horizontal.resizable-panes-container>div.resizer{
+    background-color: black;
+    z-index: 2;
+    cursor: ew-resize;
+    width: 0;
+    height: 100%;
+    position:relative;
+}
+
+div.horizontal.resizable-panes-container>div.resizer:is(::before,::after){
+    position:absolute;
+    display:block;
+    top:0;
+    bottom:0;
+    content:"";
+}
+
+div.horizontal-resizer::before{
+    left:-1px;
+    width:2px;
+    background-color: #000;
+}
+
+div.horizontal-resizer::after{
+    left:-5px;
+    width:10px;
+    background-color: #0000;
+}
+
+div.horizontal-resizer:hover::after{
+    background-color: #0004;
+}
+
+.resizable-pane {
+    position: relative;
+}
+
+.horizontal.resizable-panes-container>.resizable-pane {
+    overflow-x: hidden;
+}

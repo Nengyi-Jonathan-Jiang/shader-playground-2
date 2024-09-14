@@ -1,0 +1,9 @@
+@font-face {
+    font-family: "JetBrains Mono";
+    src:         url("../_assets/fonts/JetBrainsMono.ttf") format("truetype");
+}
+
+@font-face {
+    font-family: "Nunito";
+    src:         url("../_assets/fonts/Nunito.ttf") format("truetype");
+}

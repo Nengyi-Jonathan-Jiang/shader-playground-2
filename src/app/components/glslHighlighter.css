@@ -1,0 +1,31 @@
+div.code {
+    background: #2d2a2e;
+}
+
+div.glsl-highlighted-code>pre>span:is(.keyword, .operator, .preprocessor){
+    color: #ff6188;
+}
+div.glsl-highlighted-code>pre>span:is(.reserved, .error-char){
+    color: white;
+    text-decoration: underline;
+    text-decoration-style: wavy;
+    text-decoration-color: #ff6188;
+}
+div.glsl-highlighted-code>pre>span.builtin-type{
+    color: #78dcE8;
+}
+div.glsl-highlighted-code>pre>span.builtin-func{
+    color: #a9dc76;
+}
+div.glsl-highlighted-code>pre>span.builtin-var{
+    color: #fc9867;
+}
+div.glsl-highlighted-code>pre>span.identifier{
+    color: #ffffff;
+}
+div.glsl-highlighted-code>pre>span.literal{
+    color: #ab9df2;
+}
+div.glsl-highlighted-code>pre>span:is(.punctuation, .comment){
+    color: #939293;
+}
