@@ -1,31 +1,38 @@
 div.code {
-    background: #2d2a2e;
+    background: var(--color-dark);
 }
 
-div.glsl-highlighted-code>pre>span:is(.keyword, .operator, .preprocessor){
-    color: #ff6188;
+div.glsl-highlighted-code > pre > span:is(.keyword, .operator, .preprocessor) {
+    color: var(--color-red);
 }
-div.glsl-highlighted-code>pre>span:is(.reserved, .error-char){
-    color: white;
-    text-decoration: underline;
+
+div.glsl-highlighted-code > pre > span:is(.reserved, .error-char) {
+    color:                 var(--color-light);
+    text-decoration:       underline;
     text-decoration-style: wavy;
-    text-decoration-color: #ff6188;
+    text-decoration-color: var(--color-red);
 }
-div.glsl-highlighted-code>pre>span.builtin-type{
-    color: #78dcE8;
+
+div.glsl-highlighted-code > pre > span.builtin-type {
+    color: var(--color-blue);
 }
-div.glsl-highlighted-code>pre>span.builtin-func{
-    color: #a9dc76;
+
+div.glsl-highlighted-code > pre > span.builtin-func {
+    color: var(--color-green);
 }
-div.glsl-highlighted-code>pre>span.builtin-var{
-    color: #fc9867;
+
+div.glsl-highlighted-code > pre > span.builtin-var {
+    color: var(--color-orange);
 }
-div.glsl-highlighted-code>pre>span.identifier{
-    color: #ffffff;
+
+div.glsl-highlighted-code > pre > span.identifier {
+    color: var(--color-light);
 }
-div.glsl-highlighted-code>pre>span.literal{
-    color: #ab9df2;
+
+div.glsl-highlighted-code > pre > span.literal {
+    color: var(--color-purple);
 }
-div.glsl-highlighted-code>pre>span:is(.punctuation, .comment){
-    color: #939293;
+
+div.glsl-highlighted-code > pre > span:is(.punctuation, .comment) {
+    color: var(--color-medium);
 }

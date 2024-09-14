@@ -144,30 +144,30 @@ th {
 button#add-input {
     text-align:  center;
     width:       100%;
-    background:  gold;
-    color:       white;
+    background:  var(--color-yellow);
+    color:       var(--color-light);
     user-select: none;
 }
 
 button#add-input:hover {
-    background: yellow;
+    background: var(--color-orange);
 }
 
 /*#region compile-button*/
 
 button#compile-button {
     width:            100%;
-    background-color: limegreen;
+    background-color: var(--color-green);
     color:            white;
     padding:          1ex;
 }
 
 button#compile-button[data-error] {
-    background-color: red;
+    background-color: var(--color-red);
 }
 
 button#compile-button:hover {
-    background-color: cadetblue;
+    background-color: var(--color-blue);
 }
 
 div#canvas-container {

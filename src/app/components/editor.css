@@ -4,8 +4,8 @@ div#code-container {
     display:        flex;
     flex-direction: column;
 
-    background: #222229;
-    color:      white;
+    background: var(--color-dark);
+    color:      var(--color-light);
     padding:    1ex;
 }
 
@@ -43,6 +43,6 @@ textarea#code-input {
     resize:      none;
 
     color:       transparent;
-    caret-color: white;
+    caret-color: var(--color-light);
     background:  transparent;
 }

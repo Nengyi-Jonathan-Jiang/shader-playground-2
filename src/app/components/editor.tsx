@@ -2,7 +2,7 @@ import {GLSLHighlighter} from "@/app/components/glslHighlighter";
 
 import "./editor.css";
 
-export function CodeEditor({mainCode, setMainCode, headerCode}: {
+export function ShaderCodeEditor({mainCode, setMainCode, headerCode}: {
     mainCode: string;
     setMainCode: (mainCode: string) => void;
     headerCode: string;

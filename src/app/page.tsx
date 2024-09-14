@@ -1,11 +1,53 @@
 "use client"
 
 import "./page.css";
-import React, {useState} from "react";
+import React, {useRef, useState} from "react";
 import {HorizontalResizableDoublePane, VerticalResizableDoublePane} from "@/resizable/resizable";
 import {InputsEditor} from "@/app/components/inputsEditor";
-import {CodeEditor} from "@/app/components/editor";
+import {ShaderCodeEditor} from "@/app/components/editor";
 import {ShaderCanvas} from "@/app/webgl/ShaderCanvas";
+import {Tabs} from "@/tabs/tabs";
+import {useManualRerender} from "@/util/hooks";
+
+function JSCodeEditor() {
+    const {current: tabs} = useRef([
+        {
+            name: "Thing",
+            node: <h1>Thing</h1>
+        },
+        {
+            name: "Thing2",
+            deletable: false,
+            node: <h1>Thing2</h1>
+        },
+        {
+            name: "Thing3",
+            node: <h1>Thing3</h1>
+        },
+    ]);
+    const rerender = useManualRerender();
+
+    return <>
+        <Tabs tabs={tabs} addTab={() => {
+            const name = prompt('Enter tab name')?.trim();
+            if (name === undefined || name.length === 0) {
+                alert('Invalid tab name');
+                return null;
+            }
+
+            tabs.push({
+                name,
+                node: <h1>{name}</h1>
+            });
+            rerender();
+            return name;
+        }} deleteTab={(tabName) => {
+            const deletedTabIndex = tabs.findIndex(({name}) => name === tabName);
+            tabs.splice(deletedTabIndex, 1);
+            rerender();
+        }}></Tabs>
+    </>;
+}
 
 export default function Home() {
     const [mainCode, setMainCode] = useState(`
@@ -47,16 +89,16 @@ in vec2 fragCoord;
                 <VerticalResizableDoublePane top={
                     <div id='left'>
                         <InputsEditor setHeaderCode={setHeaderCode}/>
-                        <CodeEditor mainCode={mainCode} setMainCode={setMainCode} headerCode={headerCode}/>
+                        <ShaderCodeEditor mainCode={mainCode} setMainCode={setMainCode} headerCode={headerCode}/>
                         <div id="compile-button-container">
                             <button id="compile-button" data-error={
                                 canvasInstance.hasError ? '' : undefined
-                            }>COMPILE CODE
+                            }> COMPILE CODE
                             </button>
                         </div>
                     </div>
                 } bottom={
-                    <></>
+                    <JSCodeEditor/>
                 }/>
             } right={
                 <div id="canvas-container">

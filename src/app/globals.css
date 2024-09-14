@@ -7,3 +7,15 @@
     font-family: "Nunito";
     src:         url("../_assets/fonts/Nunito.ttf") format("truetype");
 }
+
+:root {
+    --color-red:    #ff6188;
+    --color-orange: #fc9867;
+    --color-yellow: #ffd866;
+    --color-green:  #a9dc76;
+    --color-blue:   #78dce8;
+    --color-purple: #ab9df2;
+    --color-dark:   #2d2a2e;
+    --color-medium: #939293;
+    --color-light:  #fffffd;
+}
