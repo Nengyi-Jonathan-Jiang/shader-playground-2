@@ -1,4 +1,4 @@
-import React, {ReactNode, RefObject, useEffect, useRef, useState} from "react";
+import React, {ReactNode, useEffect, useRef} from "react";
 import {useAnimation} from "@/util/hooks";
 
 interface UniformTypeMap {
@@ -46,7 +46,6 @@ export class ShaderCanvas {
             shaderSource,
             fragmentSource
         ) ?? this.program;
-        console.log('Recompiling shader program')
     }
 
     setUniform<K extends keyof UniformTypeMap>(
@@ -54,30 +53,31 @@ export class ShaderCanvas {
         type: K,
         data: UniformTypeMap[K]
     ) {
-        const gl = this.webglContext;
-        const location = gl.getUniformLocation(this.program as WebGLProgram, name);
+        if (this.program === null) return;
+
+        const location = this.webglContext.getUniformLocation(this.program, name);
         switch (type) {
             case "float":
                 // @ts-ignore
-                return gl.uniform1f(location, data);
+                return this.webglContext.uniform1f(location, data);
             case "vec2":
                 // @ts-ignore
-                return gl.uniform2f(location, ...data);
+                return this.webglContext.uniform2f(location, ...data);
             case "vec3":
                 // @ts-ignore
-                return gl.uniform3f(location, ...data);
+                return this.webglContext.uniform3f(location, ...data);
             case "vec4":
                 // @ts-ignore
-                return gl.uniform4f(location, ...data);
+                return this.webglContext.uniform4f(location, ...data);
             case "mat2":
                 // @ts-ignore
-                return gl.uniformMatrix2fv(location, false, data);
+                return this.webglContext.uniformMatrix2fv(location, false, data);
             case "mat3":
                 // @ts-ignore
-                return gl.uniformMatrix3fv(location, false, data);
+                return this.webglContext.uniformMatrix3fv(location, false, data);
             case "mat4":
                 // @ts-ignore
-                return gl.uniformMatrix4fv(location, false, data);
+                return this.webglContext.uniformMatrix4fv(location, false, data);
             default:
                 throw new TypeError(`WEBGL ERROR: Cannot set uniform of type ${type}`);
         }
@@ -114,15 +114,21 @@ export class ShaderCanvas {
         gl.shaderSource(shader, shaderSource);
         gl.compileShader(shader);
         if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-            const errorMessage = `*** Error compiling shader '${
-                shader
-            }':${
-                gl.getShaderInfoLog(shader)
+            const errorMessage = gl.getShaderInfoLog(shader) ?? '';
+            console.log(
+                [...errorMessage.matchAll(/ERROR:\s+0:\d+:\s+'(?:[^']|\\.)*'\s+:\s+[^\n]+/g)]
+                    .map(i => /ERROR:\s+0:(\d+):\s+'((?:[^']|\\.)*)'\s+:\s+([^\n]+)/g.exec(i[0]))
+            );
+            // console.log([...errorMessage.matchAll(/ERROR:[^\n]+/g)]);
+
+            // ERROR: 0:10: 'elapsdTime' : undeclared identifier
+            // ERROR: 0:10: '`' : invalid character
+
+            console.log(`*** Error compiling shader:${
+                errorMessage
             }\n${
                 shaderSource.split('\n').map((l, i) => (i + 1) + ':' + l).join('\n')
-            }`;
-
-            console.log(errorMessage);
+            }`);
 
             this.errors.push(errorMessage);
 
@@ -176,7 +182,7 @@ export class ShaderCanvas {
             }
         });
 
-        useAnimation((deltaTime) => {
+        useAnimation((_, deltaTime) => {
             canvas.setCanvasSize(canvasElement.clientWidth, canvasElement.clientHeight);
             canvas.setUniforms(getUniforms(canvas, deltaTime));
             canvas.draw();

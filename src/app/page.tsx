@@ -1,7 +1,7 @@
 "use client"
 
 import "./page.css";
-import React, {useRef, useState} from "react";
+import React, {useEffect, useRef, useState} from "react";
 import {HorizontalResizableDoublePane, VerticalResizableDoublePane} from "@/resizable/resizable";
 import {InputsEditor} from "@/app/components/inputsEditor";
 import {ShaderCodeEditor} from "@/app/components/editor";
@@ -58,9 +58,10 @@ void main(){
     const [headerCode, setHeaderCode] = useState(`
 #version 300 es
 precision mediump float;
+in vec2 fragCoord;
 out vec4 fragColor;
 
-in vec2 fragCoord;
+uniform float elapsedTime;
 
 // Main code
     `.trim());
@@ -77,11 +78,12 @@ in vec2 fragCoord;
             gl_Position = vec4(a_position, 1.0, 1.0);
             fragCoord = vec2(aspectRatio, 1.0) * a_position;
         }
-    `, `#version 300 es
-        precision mediump float;
-        in vec2 fragCoord;
-        out vec4 fragColor;
-    ` + mainCode);
+    `, headerCode + '\n' + mainCode);
+
+    const currentTime = useRef(0);
+    useEffect(() => {
+        currentTime.current = 0;
+    }, [mainCode, headerCode]);
 
     return (
         <div id="content">
@@ -102,8 +104,14 @@ in vec2 fragCoord;
                 }/>
             } right={
                 <div id="canvas-container">
-                    <ShaderCanvas.Renderer canvas={canvasInstance} getUniforms={() => {
-                        return [];
+                    <ShaderCanvas.Renderer canvas={canvasInstance} getUniforms={(canvas, deltaTime) => {
+                        return [
+                            {
+                                name: "elapsedTime",
+                                type: "float",
+                                value: (currentTime.current += deltaTime)
+                            }
+                        ];
                     }}/>
                 </div>
             }/>
