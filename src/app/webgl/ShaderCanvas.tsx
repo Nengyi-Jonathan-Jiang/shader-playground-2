@@ -15,7 +15,7 @@ export class ShaderCanvas {
     private program: WebGLProgram | null = null;
     readonly canvasElement: HTMLCanvasElement;
     private readonly webglContext: WebGL2RenderingContext;
-    private readonly errors: string[] = [];
+    readonly errors: { line: number, message: string }[] = [];
 
     constructor() {
         this.canvasElement = document.createElement('canvas');
@@ -46,6 +46,7 @@ export class ShaderCanvas {
             shaderSource,
             fragmentSource
         ) ?? this.program;
+        this.webglContext.useProgram(this.program);
     }
 
     setUniform<K extends keyof UniformTypeMap>(
@@ -56,6 +57,8 @@ export class ShaderCanvas {
         if (this.program === null) return;
 
         const location = this.webglContext.getUniformLocation(this.program, name);
+        if (location === null) return;
+
         switch (type) {
             case "float":
                 // @ts-ignore
@@ -79,7 +82,7 @@ export class ShaderCanvas {
                 // @ts-ignore
                 return this.webglContext.uniformMatrix4fv(location, false, data);
             default:
-                throw new TypeError(`WEBGL ERROR: Cannot set uniform of type ${type}`);
+                return;
         }
     }
 
@@ -95,10 +98,8 @@ export class ShaderCanvas {
 
     draw() {
         if (this.program === null) return;
-        this.webglContext.useProgram(this.program);
         let a = this.canvasElement.clientWidth / this.canvasElement.clientHeight;
         this.setUniform('aspectRatio', "float", a);
-
         this.webglContext.clear(
             this.webglContext.COLOR_BUFFER_BIT | this.webglContext.DEPTH_BUFFER_BIT
         );
@@ -115,22 +116,13 @@ export class ShaderCanvas {
         gl.compileShader(shader);
         if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
             const errorMessage = gl.getShaderInfoLog(shader) ?? '';
-            console.log(
-                [...errorMessage.matchAll(/ERROR:\s+0:\d+:\s+'(?:[^']|\\.)*'\s+:\s+[^\n]+/g)]
-                    .map(i => /ERROR:\s+0:(\d+):\s+'((?:[^']|\\.)*)'\s+:\s+([^\n]+)/g.exec(i[0]))
-            );
-            // console.log([...errorMessage.matchAll(/ERROR:[^\n]+/g)]);
 
-            // ERROR: 0:10: 'elapsdTime' : undeclared identifier
-            // ERROR: 0:10: '`' : invalid character
-
-            console.log(`*** Error compiling shader:${
-                errorMessage
-            }\n${
-                shaderSource.split('\n').map((l, i) => (i + 1) + ':' + l).join('\n')
-            }`);
-
-            this.errors.push(errorMessage);
+            this.errors.push(...[...errorMessage.matchAll(/ERROR:\s+0:\d+:\s+[^\n]+/g)]
+                .map(i => /ERROR:\s+0:(\d+):\s+([^\n]+)/g.exec(i[0]) as RegExpExecArray)
+                .map(([, line, message]) => ({
+                    line: +line - 1,
+                    message
+                })));
 
             gl.deleteShader(shader);
             return null;

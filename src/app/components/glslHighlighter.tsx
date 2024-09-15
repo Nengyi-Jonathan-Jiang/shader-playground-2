@@ -108,7 +108,10 @@ const preprocessorRegex = toCombinedRegex(
     '#version\\s+[13]00\\s+es'
 );
 
-export function GLSLHighlighter({children}: { children: string }): ReactNode {
+export function GLSLHighlighter({children, errors}: {
+    children: string,
+    errors: Map<number, string[]>
+}): ReactNode {
     return <div className='glsl-highlighted-code'>
         <CodeHighlighter rules={{
             'keyword': keywordRegex,
@@ -123,5 +126,23 @@ export function GLSLHighlighter({children}: { children: string }): ReactNode {
             'identifier': identifierRegex,
             'preprocessor': preprocessorRegex
         }}>{children}</CodeHighlighter>
+        <div className='glsl-errors'>
+            {
+                new Array(children.split('\n').length).fill(null).map((_, i) => {
+                    const lineErrors = errors.get(i);
+                    if (!lineErrors) {
+                        return <span className='error-line no-errors'></span>;
+                    }
+
+                    return <span className='error-line'>
+                        <div className='errors'>
+                            {
+                                lineErrors.map(message => <span>{message}</span>)
+                            }
+                        </div>
+                    </span>;
+                })
+            }
+        </div>
     </div>
 }

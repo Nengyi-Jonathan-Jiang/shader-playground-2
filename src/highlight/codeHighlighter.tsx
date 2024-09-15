@@ -10,7 +10,7 @@ export function CodeHighlighter({children: input, rules}: {
         rulesArr.push([property, rules[property]]);
     }
 
-    let i = 0;
+    let currentTokenIndex = 0;
 
     while (input.length) {
         let matchedClass: string | null = null;
@@ -27,7 +27,7 @@ export function CodeHighlighter({children: input, rules}: {
         }
 
         if (bestLength > 0 && matchedClass !== null) {
-            elements.push(<span key={i++} className={matchedClass}>{
+            elements.push(<span key={currentTokenIndex++} className={matchedClass}>{
                 input.substring(0, bestLength)
             }</span>);
             input = input.substring(bestLength);
@@ -35,7 +35,7 @@ export function CodeHighlighter({children: input, rules}: {
             const skippedChar = input.charAt(0);
             const element = skippedChar.match(/^\s$/)
                 ? skippedChar
-                : <span key={i++} className={'error-char'}>{skippedChar}</span>;
+                : <span key={currentTokenIndex++} className={'error-char'}>{skippedChar}</span>;
             elements.push(element)
             input = input.substring(1);
         }

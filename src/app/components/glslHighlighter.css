@@ -36,3 +36,45 @@ div.glsl-highlighted-code > pre > span.literal {
 div.glsl-highlighted-code > pre > span:is(.punctuation, .comment) {
     color: var(--color-medium);
 }
+
+
+div.glsl-highlighted-code span.error-line::before {
+    content:        "-";
+    color:          transparent;
+    user-select:    none;
+    pointer-events: none;
+}
+
+div.glsl-highlighted-code .glsl-errors {
+    display:        flex;
+    flex-direction: column;
+    position:       absolute;
+    top:            0;
+    width:          100%;
+}
+
+div.glsl-highlighted-code {
+    position: relative;
+}
+
+div.glsl-highlighted-code div.errors {
+    position:         absolute;
+    width:            100%;
+    background-color: var(--color-red);
+    white-space: wrap;
+}
+
+div.glsl-highlighted-code span.error-line:not(.no-errors)::after {
+    content: "";
+    width:         100%;
+    margin-top: -5px;
+    height: 5px;
+    display:       block;
+    border-bottom: 1px dashed var(--color-red);
+    position: absolute;
+    z-index:       1;
+}
+
+div.glsl-highlighted-code .error-line:not(:hover) > div.errors:not(:hover) {
+    display: none;
+}

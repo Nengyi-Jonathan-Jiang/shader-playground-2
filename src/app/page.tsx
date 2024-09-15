@@ -66,9 +66,9 @@ uniform float elapsedTime;
 // Main code
     `.trim());
 
-    const [canvasInstance] = useState(() => new ShaderCanvas());
+    const [shaderCanvas] = useState(() => new ShaderCanvas());
 
-    canvasInstance.setProgram(
+    shaderCanvas.setProgram(
         `#version 300 es
         layout (location = 0) in vec2 a_position;
         uniform float aspectRatio;
@@ -85,16 +85,29 @@ uniform float elapsedTime;
         currentTime.current = 0;
     }, [mainCode, headerCode]);
 
+    const errors = new Map<number, string[]>;
+    for (const {line, message} of shaderCanvas.errors) {
+        if (!errors.has(line)) {
+            errors.set(line, []);
+        }
+        (errors.get(line) as string[]).push(message);
+    }
+
     return (
         <div id="content">
             <HorizontalResizableDoublePane left={
                 <VerticalResizableDoublePane top={
                     <div id='left'>
                         <InputsEditor setHeaderCode={setHeaderCode}/>
-                        <ShaderCodeEditor mainCode={mainCode} setMainCode={setMainCode} headerCode={headerCode}/>
+                        <ShaderCodeEditor
+                            mainCode={mainCode}
+                            setMainCode={setMainCode}
+                            headerCode={headerCode}
+                            errors={errors}
+                        />
                         <div id="compile-button-container">
                             <button id="compile-button" data-error={
-                                canvasInstance.hasError ? '' : undefined
+                                shaderCanvas.hasError ? '' : undefined
                             }> COMPILE CODE
                             </button>
                         </div>
@@ -104,7 +117,7 @@ uniform float elapsedTime;
                 }/>
             } right={
                 <div id="canvas-container">
-                    <ShaderCanvas.Renderer canvas={canvasInstance} getUniforms={(canvas, deltaTime) => {
+                    <ShaderCanvas.Renderer canvas={shaderCanvas} getUniforms={(canvas, deltaTime) => {
                         return [
                             {
                                 name: "elapsedTime",
