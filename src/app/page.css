@@ -38,15 +38,10 @@ div#content {
     overflow: hidden;
 }
 
-div#left {
-    width:          100%;
-    height:         100%;
-    display:        flex;
-    flex-direction: column;
-    align-items:    stretch;
-    overflow-x:     scroll;
-    min-width:      0;
-    max-width:      100vw;
+div#glsl-editor {
+    display:  flex;
+    height:   100%;
+    overflow: scroll;
 }
 
 div#edit-inputs {
@@ -153,31 +148,14 @@ button#add-input:hover {
     background: var(--color-orange);
 }
 
-/*#region compile-button*/
-
-button#compile-button {
-    width:            100%;
-    background-color: var(--color-green);
-    color:            white;
-    padding:          1ex;
-}
-
-button#compile-button[data-error] {
-    background-color: var(--color-red);
-}
-
-button#compile-button:hover {
-    background-color: var(--color-blue);
-}
-
 div#canvas-container {
     width:      100%;
     height:     100vh;
     background: grey;
-    overflow: hidden;
+    overflow:   hidden;
 }
 
-div#canvas-container>canvas {
+div#canvas-container > canvas {
     width:  100%;
     height: 100%;
 }

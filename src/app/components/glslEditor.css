@@ -1,0 +1,22 @@
+div#code-container {
+    overflow:       scroll;
+    flex:           1;
+    display:        flex;
+    flex-direction: column;
+
+    background:     var(--color-dark);
+    color:          var(--color-light);
+    padding:        1ex;
+}
+
+div#code-header {
+    min-width: 100%;
+    white-space: nowrap;
+    flex-grow:   0;
+}
+
+div#code-body {
+    min-width: 100%;
+    white-space: nowrap;
+    flex-grow: 1;
+}

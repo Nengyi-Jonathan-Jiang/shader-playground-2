@@ -1,15 +1,18 @@
 import React, {ReactNode, useEffect, useRef} from "react";
-import {useAnimation} from "@/util/hooks";
+import {useAnimation, useListenerOnHTMLElement} from "@/util/hooks";
 
-interface UniformTypeMap {
+export interface ShaderCanvasUniformTypeMap {
     float: number,
-    vec2: number[],
-    vec3: number[],
-    vec4: number[],
+    int: number,
+    vec2: [number, number],
+    ivec2: [number, number],
+    vec3: [number, number, number],
+    vec4: [number, number, number, number],
     mat2: number[],
     mat3: number[],
     mat4: number[],
 }
+export type ShaderCanvasUniformType = keyof ShaderCanvasUniformTypeMap;
 
 export class ShaderCanvas {
     private program: WebGLProgram | null = null;
@@ -23,6 +26,9 @@ export class ShaderCanvas {
         const gl = canvas.getContext("webgl2", {antialias: false});
         if (!gl) throw Error("ERROR: WEBGL NOT SUPPORTED");
         this.webglContext = gl;
+
+        gl.getExtension('EXT_color_buffer_float');
+        gl.getExtension('OES_texture_float_linear');
         gl.clearColor(0, 0, 0, 0);
 
         let buffer = gl.createBuffer();
@@ -49,10 +55,10 @@ export class ShaderCanvas {
         this.webglContext.useProgram(this.program);
     }
 
-    setUniform<K extends keyof UniformTypeMap>(
+    setUniform<K extends ShaderCanvasUniformType>(
         name: string,
         type: K,
-        data: UniformTypeMap[K]
+        data: ShaderCanvasUniformTypeMap[K]
     ) {
         if (this.program === null) return;
 
@@ -63,6 +69,12 @@ export class ShaderCanvas {
             case "float":
                 // @ts-ignore
                 return this.webglContext.uniform1f(location, data);
+            case "int":
+                // @ts-ignore
+                return this.webglContext.uniform1i(location, data);
+            case "ivec2":
+                // @ts-ignore
+                return this.webglContext.uniform2i(location, ...data);
             case "vec2":
                 // @ts-ignore
                 return this.webglContext.uniform2f(location, ...data);
@@ -88,7 +100,7 @@ export class ShaderCanvas {
 
     setUniforms(uniforms: {
         name: string,
-        type: keyof UniformTypeMap,
+        type: keyof ShaderCanvasUniformTypeMap,
         value: number | number[]
     }[]) {
         for (const {name, type, value} of uniforms) {
@@ -98,7 +110,7 @@ export class ShaderCanvas {
 
     draw() {
         if (this.program === null) return;
-        let a = this.canvasElement.clientWidth / this.canvasElement.clientHeight;
+        let a = this.canvasElement.width / this.canvasElement.height;
         this.setUniform('aspectRatio', "float", a);
         this.webglContext.clear(
             this.webglContext.COLOR_BUFFER_BIT | this.webglContext.DEPTH_BUFFER_BIT
@@ -135,7 +147,13 @@ export class ShaderCanvas {
         for (const shader of shaders) gl.attachShader(program, shader);
         gl.linkProgram(program);
         if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-            console.log('Error in program linking:' + gl.getProgramInfoLog(program));
+            const errors = (gl.getProgramInfoLog(program) ?? '').trim().split(/\s*\n\s*/);
+            this.errors.push(...errors.map(i => {
+                return {
+                    line: 0,
+                    message: i
+                }
+            }));
             gl.deleteProgram(program);
             return null;
         }
@@ -160,7 +178,7 @@ export class ShaderCanvas {
         canvas: ShaderCanvas,
         getUniforms: (canvas: ShaderCanvas, deltaTime: DOMHighResTimeStamp) => {
             name: string,
-            type: keyof UniformTypeMap,
+            type: keyof ShaderCanvasUniformTypeMap,
             value: number | number[]
         }[]
     }): ReactNode {
@@ -174,9 +192,11 @@ export class ShaderCanvas {
             }
         });
 
-        useAnimation((_, deltaTime) => {
+        //
+
+        useAnimation((currTime, deltaTime) => {
             canvas.setCanvasSize(canvasElement.clientWidth, canvasElement.clientHeight);
-            canvas.setUniforms(getUniforms(canvas, deltaTime));
+            canvas.setUniforms(getUniforms(canvas, currTime));
             canvas.draw();
         })
 

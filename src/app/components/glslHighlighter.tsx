@@ -1,7 +1,8 @@
 import {ReactNode} from "react";
-import {CodeHighlighter} from "@/highlight/codeHighlighter";
+import {CodeHighlighter} from "@/codeEditor/codeHighlighter";
 
-import './glslHighlighter.css'
+import './highlighted.css'
+import {HighlighterWithErrors} from "@/codeEditor/highlighterWithErrors";
 
 function sanitizeForRegex(str: string): string {
     return str.replaceAll(/[$-/?[-^{|}]/g, '\\$&');
@@ -25,8 +26,22 @@ const keywordRegex = toCombinedRegex(
     "discard",
     "return",
     "lowp", "mediump", "highp", "precision",
-    "true", "false",
     "struct",
+);
+const builtinTypeRegex = toCombinedRegex(
+    "mat2", "mat3", "mat4",
+    "dmat2", "dmat3", "dmat4",
+    "mat2x2", "mat2x3", "mat2x4",
+    "dmat2x2", "dmat2x3", "dmat2x4",
+    "mat3x2", "mat3x3", "mat3x4",
+    "dmat3x2", "dmat3x3", "dmat3x4",
+    "mat4x2", "mat4x3", "mat4x4",
+    "dmat4x2", "dmat4x3", "dmat4x4",
+    "vec2", "vec3", "vec4",
+    "ivec2", "ivec3", "ivec4",
+    "bvec2", "bvec3", "bvec4",
+    "dvec2", "dvec3", "dvec4",
+    "uint", "uvec2", "uvec3", "uvec4",
 
     "sampler1D", "sampler2D", "sampler3D",
     "isampler1D", "isampler2D", "isampler3D",
@@ -52,21 +67,6 @@ const keywordRegex = toCombinedRegex(
     "image2DMS", "iimage2DMS", "uimage2DMS",
     "image2DMSArray", "iimage2DMSArray", "uimage2DMSArray",
 );
-const builtinTypeRegex = toCombinedRegex(
-    "mat2", "mat3", "mat4",
-    "dmat2", "dmat3", "dmat4",
-    "mat2x2", "mat2x3", "mat2x4",
-    "dmat2x2", "dmat2x3", "dmat2x4",
-    "mat3x2", "mat3x3", "mat3x4",
-    "dmat3x2", "dmat3x3", "dmat3x4",
-    "mat4x2", "mat4x3", "mat4x4",
-    "dmat4x2", "dmat4x3", "dmat4x4",
-    "vec2", "vec3", "vec4",
-    "ivec2", "ivec3", "ivec4",
-    "bvec2", "bvec3", "bvec4",
-    "dvec2", "dvec3", "dvec4",
-    "uint", "uvec2", "uvec3", "uvec4",
-);
 const builtinFunctionRegex = toCombinedRegex(
     "radians", "degrees",
     "sin", "cos", "tan", "asin", "acos", "atan",
@@ -80,7 +80,7 @@ const builtinFunctionRegex = toCombinedRegex(
     "matrixCompMult", "outerProduct", "transpose", "determinant", "inverse",
     "texture", "texelFetch", "textureOffset", "texelFetchOffset"
 );
-const builtinVarRegex = toCombinedRegex("fragColor");
+const builtinVarRegex = toCombinedRegex("");
 
 const reservedKeywordRegex = toCombinedRegex(
     "attribute", "buffer", "shared", "coherent", "volatile", "restrict", "readonly", "writeonly",
@@ -93,8 +93,9 @@ const reservedKeywordRegex = toCombinedRegex(
 );
 const literalsRegex = toCombinedRegex("true", "false", "\\d+\\.\\d*|\\.\\d+|\\d+");
 const operatorsRegex = toCombinedRegex(...`
-    ++ -- + - ! * / + - < <= > >= == != && ^^  || ? : = += -= *= /=
-    %  << >> & ^ |
+    ++ -- + - ! * / + - < <= > >= == != && ^^ || ? : = += -= *= /=
+    % %=
+    << <<= >> >>= & &= ^ ^= | |=
 `.trim().split(/\s+/g).map(sanitizeForRegex));
 const punctuationRegex = toCombinedRegex(...[..."{.}(,)[;]"].map(sanitizeForRegex));
 const commentRegex = /^(\/\/[^\n]*|\/\*([^*]|\*+[^*/])*\**\*\/)/;
@@ -112,37 +113,21 @@ export function GLSLHighlighter({children, errors}: {
     children: string,
     errors: Map<number, string[]>
 }): ReactNode {
-    return <div className='glsl-highlighted-code'>
-        <CodeHighlighter rules={{
-            'keyword': keywordRegex,
-            'builtin-type': builtinTypeRegex,
-            'builtin-func': builtinFunctionRegex,
-            'builtin-var': builtinVarRegex,
-            'reserved': reservedKeywordRegex,
-            'literal': literalsRegex,
-            'operator': operatorsRegex,
-            'punctuation': punctuationRegex,
-            'comment': commentRegex,
-            'identifier': identifierRegex,
-            'preprocessor': preprocessorRegex
-        }}>{children}</CodeHighlighter>
-        <div className='glsl-errors'>
-            {
-                new Array(children.split('\n').length).fill(null).map((_, i) => {
-                    const lineErrors = errors.get(i);
-                    if (!lineErrors) {
-                        return <span className='error-line no-errors'></span>;
-                    }
-
-                    return <span className='error-line'>
-                        <div className='errors'>
-                            {
-                                lineErrors.map(message => <span>{message}</span>)
-                            }
-                        </div>
-                    </span>;
-                })
-            }
-        </div>
+    return <div className='glsl'>
+        <HighlighterWithErrors errors={errors} Highlighter={
+            ({children}) => <CodeHighlighter rules={{
+                'keyword': keywordRegex,
+                'builtin-type': builtinTypeRegex,
+                'builtin-func': builtinFunctionRegex,
+                'builtin-var': builtinVarRegex,
+                'reserved': reservedKeywordRegex,
+                'literal': literalsRegex,
+                'operator': operatorsRegex,
+                'punctuation': punctuationRegex,
+                'comment': commentRegex,
+                'identifier': identifierRegex,
+                'preprocessor': preprocessorRegex
+            }}>{children}</CodeHighlighter>
+        }>{children}</HighlighterWithErrors>
     </div>
 }

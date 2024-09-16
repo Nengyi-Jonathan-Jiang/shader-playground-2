@@ -4,87 +4,45 @@ import "./page.css";
 import React, {useEffect, useRef, useState} from "react";
 import {HorizontalResizableDoublePane, VerticalResizableDoublePane} from "@/resizable/resizable";
 import {InputsEditor} from "@/app/components/inputsEditor";
-import {ShaderCodeEditor} from "@/app/components/editor";
+import {ShaderCodeEditor} from "@/app/components/glslEditor";
 import {ShaderCanvas} from "@/app/webgl/ShaderCanvas";
-import {Tabs} from "@/tabs/tabs";
-import {useManualRerender} from "@/util/hooks";
+import {UniformsEditor} from "@/app/components/uniformsEditor";
 
-function JSCodeEditor() {
-    const {current: tabs} = useRef([
-        {
-            name: "Thing",
-            node: <h1>Thing</h1>
-        },
-        {
-            name: "Thing2",
-            deletable: false,
-            node: <h1>Thing2</h1>
-        },
-        {
-            name: "Thing3",
-            node: <h1>Thing3</h1>
-        },
-    ]);
-    const rerender = useManualRerender();
+const vertShader = `#version 300 es
+layout (location = 0) in vec2 a_position;
+uniform float aspectRatio;
+out vec2 fragCoord;
 
-    return <>
-        <Tabs tabs={tabs} addTab={() => {
-            const name = prompt('Enter tab name')?.trim();
-            if (name === undefined || name.length === 0) {
-                alert('Invalid tab name');
-                return null;
-            }
-
-            tabs.push({
-                name,
-                node: <h1>{name}</h1>
-            });
-            rerender();
-            return name;
-        }} deleteTab={(tabName) => {
-            const deletedTabIndex = tabs.findIndex(({name}) => name === tabName);
-            tabs.splice(deletedTabIndex, 1);
-            rerender();
-        }}></Tabs>
-    </>;
-}
-
-export default function Home() {
-    const [mainCode, setMainCode] = useState(`
 void main(){
-    fragColor = vec4(0.5 + 0.5 * cos(fragCoord.xyx + vec3(0,2,4)), 1.0);
-}
-    `.trim());
-    const [headerCode, setHeaderCode] = useState(`
-#version 300 es
+    gl_Position = vec4(a_position, 1.0, 1.0);
+    fragCoord = vec2(aspectRatio, 1.0) * a_position;
+}`;
+
+const defaultHeaderCode = `#version 300 es
 precision mediump float;
 in vec2 fragCoord;
 out vec4 fragColor;
 
 uniform float elapsedTime;
 
-// Main code
-    `.trim());
+`;
+
+const defaultMainCode = `void main(){
+    fragColor = vec4(0.5 + 0.5 * cos(fragCoord.xyx + vec3(0,2,4)), 1.0);
+}`
+
+export default function Home() {
+    const [mainCode, setMainCode] = useState(defaultMainCode);
+    const [headerCode, setHeaderCode] = useState(defaultHeaderCode);
 
     const [shaderCanvas] = useState(() => new ShaderCanvas());
 
-    shaderCanvas.setProgram(
-        `#version 300 es
-        layout (location = 0) in vec2 a_position;
-        uniform float aspectRatio;
-        out vec2 fragCoord;
-        
-        void main(){
-            gl_Position = vec4(a_position, 1.0, 1.0);
-            fragCoord = vec2(aspectRatio, 1.0) * a_position;
-        }
-    `, headerCode + '\n' + mainCode);
-
-    const currentTime = useRef(0);
+    const startTime = useRef(-1);
     useEffect(() => {
-        currentTime.current = 0;
+        startTime.current = -1;
     }, [mainCode, headerCode]);
 
+    shaderCanvas.setProgram(vertShader, headerCode + '\n' + mainCode);
     const errors = new Map<number, string[]>;
     for (const {line, message} of shaderCanvas.errors) {
         if (!errors.has(line)) {
@@ -97,7 +55,7 @@ uniform float elapsedTime;
         <div id="content">
             <HorizontalResizableDoublePane left={
                 <VerticalResizableDoublePane top={
-                    <div id='left'>
+                    <div id='glsl-editor'>
                         <InputsEditor setHeaderCode={setHeaderCode}/>
                         <ShaderCodeEditor
                             mainCode={mainCode}
@@ -105,24 +63,22 @@ uniform float elapsedTime;
                             headerCode={headerCode}
                             errors={errors}
                         />
-                        <div id="compile-button-container">
-                            <button id="compile-button" data-error={
-                                shaderCanvas.hasError ? '' : undefined
-                            }> COMPILE CODE
-                            </button>
-                        </div>
                     </div>
                 } bottom={
-                    <JSCodeEditor/>
+                    <UniformsEditor/>
                 }/>
             } right={
                 <div id="canvas-container">
-                    <ShaderCanvas.Renderer canvas={shaderCanvas} getUniforms={(canvas, deltaTime) => {
+                    <ShaderCanvas.Renderer canvas={shaderCanvas} getUniforms={(canvas, currentTime) => {
+                        if (startTime.current == -1) {
+                            startTime.current = currentTime;
+                        }
+
                         return [
                             {
                                 name: "elapsedTime",
                                 type: "float",
-                                value: (currentTime.current += deltaTime)
+                                value: currentTime - startTime.current
                             }
                         ];
                     }}/>

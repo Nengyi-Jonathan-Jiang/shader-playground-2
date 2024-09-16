@@ -1,6 +1,7 @@
 import {GLSLHighlighter} from "@/app/components/glslHighlighter";
 
-import "./editor.css";
+import "./glslEditor.css";
+import {CodeEditor} from "@/codeEditor/codeEditor";
 
 export function ShaderCodeEditor({mainCode, setMainCode, headerCode, errors}: {
     mainCode: string;
@@ -20,20 +21,12 @@ export function ShaderCodeEditor({mainCode, setMainCode, headerCode, errors}: {
         }
     }
 
-
-    console.log(errors, headerCodeErrors, mainCodeErrors);
-
     return <div id="code-container" className="code">
         <div id="code-header">
             <GLSLHighlighter errors={headerCodeErrors}>{headerCode}</GLSLHighlighter>
         </div>
-        <div id="code-editor">
-            <div id="code-overlay">
-                <GLSLHighlighter errors={mainCodeErrors}>{mainCode}</GLSLHighlighter>
-            </div>
-            <textarea id="code-input"
-                      spellCheck="false"
-                      value={mainCode} onChange={e => setMainCode(e.target.value)}></textarea>
+        <div id="code-body">
+            <CodeEditor src={mainCode} setSrc={setMainCode} errors={mainCodeErrors} Highlighter={GLSLHighlighter}/>
         </div>
     </div>
 }

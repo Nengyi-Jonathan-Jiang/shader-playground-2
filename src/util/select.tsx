@@ -36,6 +36,7 @@ const selectOptionsOpenStyle: CSSProperties = {
 
 type SelectProps<OptionValueType, ActiveOptionRefType extends HTMLElement, OptionRefType extends HTMLElement> = {
     containerClassName?: string,
+    disabled?: boolean,
     onChange: ((value: OptionValueType) => void),
     value: OptionValueType,
     options: OptionValueType[]
@@ -52,6 +53,7 @@ export function Select<OptionValueType, ActiveOptionRefType extends HTMLElement,
      onChange,
      options,
      value,
+     disabled,
      ActiveOptionComponent = BasicSelectOptionComponent,
      OptionComponent = BasicSelectOptionComponent,
      containerProps = () => ({}),
@@ -59,7 +61,9 @@ export function Select<OptionValueType, ActiveOptionRefType extends HTMLElement,
      optionProps = () => ({}),
      ...otherProps
  }: SelectProps<OptionValueType, ActiveOptionRefType, OptionRefType>) {
-    const [isOpen, setIsOpen] = useState(false);
+    const [isOpen, setIsOpen] = (
+        (x) => disabled ? [false, (_: boolean) => void 0] : x
+    )(useState(false));
 
     const open = () => setIsOpen(true);
     const close = () => setIsOpen(false);
