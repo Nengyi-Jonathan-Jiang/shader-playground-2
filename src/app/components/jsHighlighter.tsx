@@ -23,6 +23,7 @@ const keywordRegex = toCombinedRegex(
     "finally", "for", "function",
     "if", "let",
     "null",
+    "of",
     "return", "static",
     "super", "switch", "this",
     "throw", "try", "typeof", "var", "undefined",
