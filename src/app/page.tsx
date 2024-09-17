@@ -10,7 +10,7 @@ import {UniformsEditor} from "@/app/components/uniformsEditor";
 
 const vertShader = `#version 300 es
 layout (location = 0) in vec2 a_position;
-uniform float aspectRatio;
+uniform mediump float aspectRatio;
 out vec2 fragCoord;
 
 void main(){
@@ -23,6 +23,7 @@ precision mediump float;
 in vec2 fragCoord;
 out vec4 fragColor;
 
+uniform float aspectRatio;
 uniform float elapsedTime;
 
 `;

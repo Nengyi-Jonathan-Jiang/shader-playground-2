@@ -1,10 +1,10 @@
 import React, {ReactNode, useRef} from "react";
 import {useManualRerender} from "@/util/hooks";
-import {Tab, Tabs} from "@/tabs/tabs";
+import {Tabs} from "@/tabs/tabs";
 import "./uniformsEditor.css"
 import {CodeEditor} from "@/codeEditor/codeEditor";
 import {JSHighlighter} from "@/app/components/jsHighlighter";
-import {ShaderCanvasUniformTypeMap, ShaderCanvasUniformType} from "@/app/webgl/ShaderCanvas";
+import {ShaderCanvasUniformType} from "@/app/webgl/ShaderCanvas";
 import {Select} from "@/util/select";
 
 class UniformEditorData {
@@ -66,15 +66,31 @@ function UniformsEditorTab({data, rerender: rerenderParent}: {
             ] as ShaderCanvasUniformType[]}/>
         </div>
         <div className='js'>
-            <CodeEditor src={data.initSrc} setSrc={() => void 0} errors={new Map} Highlighter={JSHighlighter}/>
+            {
+                data.editable ? (
+                    <CodeEditor value={data.initSrc} setValue={(value) => {
+                        data.initSrc = value;
+                        rerender();
+                    }} Highlighter={JSHighlighter}/>
+                ) : (
+                    <JSHighlighter value={data.initSrc}/>
+                )
+            }
 
-            <JSHighlighter errors={new Map}>{
-                `registerUniform("${data.name}", "float", (canvas, currentTime) => {`
-            }</JSHighlighter>
-            <CodeEditor src={data.periodicSrc} setSrc={() => void 0} errors={new Map} Highlighter={JSHighlighter}/>
-            <JSHighlighter errors={new Map}>{
-                '});'
-            }</JSHighlighter>
+            <JSHighlighter value={`registerUniform("${data.name}", "float", (canvas, currentTime) => {`}/>
+            <div>
+                {
+                    data.editable ? (
+                        <CodeEditor value={data.periodicSrc} setValue={(value) => {
+                            data.periodicSrc = value;
+                            rerender();
+                        }} Highlighter={JSHighlighter}/>
+                    ) : (
+                        <JSHighlighter value={data.periodicSrc}/>
+                    )
+                }
+            </div>
+            <JSHighlighter value='});'/>
         </div>
     </div>
 }
@@ -99,14 +115,15 @@ export function UniformsEditor() {
             id: data.id,
             node: <UniformsEditorTab data={data} rerender={rerender}/>
         }))} addTab={() => {
-            const name = prompt('Enter tab name')?.trim();
+            const name = prompt('Enter tab name')?.replaceAll(/\W/g, '');
             if (name === undefined || name.length === 0) {
                 alert('Invalid tab name');
                 return null;
             }
-            tabs.push(new UniformEditorData(name, 'float', '', ''));
+            const newData = new UniformEditorData(name, 'float', '', '');
+            tabs.push(newData);
             rerender();
-            return name;
+            return newData.id;
         }} deleteTab={(tabID) => {
             const deletedTabIndex = tabs.findIndex(({id}) => id === tabID);
             if (deletedTabIndex === -1) return;

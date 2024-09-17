@@ -10,13 +10,13 @@ div#code-container {
 }
 
 div#code-header {
-    min-width: 100%;
+    width:       100%;
     white-space: nowrap;
     flex-grow:   0;
 }
 
 div#code-body {
-    min-width: 100%;
+    min-width:   100%;
     white-space: nowrap;
-    flex-grow: 1;
+    flex-grow:   1;
 }

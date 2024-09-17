@@ -12,6 +12,7 @@ export interface ShaderCanvasUniformTypeMap {
     mat3: number[],
     mat4: number[],
 }
+
 export type ShaderCanvasUniformType = keyof ShaderCanvasUniformTypeMap;
 
 export class ShaderCanvas {
@@ -118,10 +119,6 @@ export class ShaderCanvas {
         this.webglContext.drawArrays(this.webglContext.TRIANGLES, 0, 6);
     }
 
-    public get hasError() {
-        return this.errors.length > 0;
-    }
-
     private createShader(gl: WebGLRenderingContext, shaderSource: string, shaderType: number): WebGLShader | null {
         const shader = gl.createShader(shaderType) as WebGLShader;
         gl.shaderSource(shader, shaderSource);
@@ -185,6 +182,9 @@ export class ShaderCanvas {
         const placeholderRef = useRef<HTMLDivElement>(null);
         const canvasElement = canvas.canvasElement;
 
+        const mousePosition = useRef<[number, number]>([0, 0]);
+        const isMouseButtonDown = useRef<boolean>(false);
+
         useEffect(() => {
             const placeholderElement = placeholderRef.current;
             if (placeholderElement) {
@@ -192,7 +192,20 @@ export class ShaderCanvas {
             }
         });
 
-        //
+        // Mouse position tracking
+        const updateMousePosition = (e: MouseEvent) => {
+            const canvasBoundingBox = canvasElement.getBoundingClientRect();
+
+            // Update the position if the position is in bounds
+
+            const x = (e.clientX - canvasBoundingBox.left - canvasBoundingBox.width / 2) / canvasElement.height;
+            const y = (e.clientY - canvasBoundingBox.top - canvasBoundingBox.height / 2) / canvasElement.height;
+            mousePosition.current = [x, y];
+        };
+        useListenerOnHTMLElement(canvasElement, "mouseenter", updateMousePosition);
+        useListenerOnHTMLElement(canvasElement, "mousemove", updateMousePosition);
+        useListenerOnHTMLElement(canvasElement, "mouseleave", updateMousePosition);
+
 
         useAnimation((currTime, deltaTime) => {
             canvas.setCanvasSize(canvasElement.clientWidth, canvasElement.clientHeight);

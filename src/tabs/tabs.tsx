@@ -67,9 +67,9 @@ export function Tabs<TabID extends Key>({tabs, addTab, deleteTab}: {
                 ))
             }
             {addTab ? <NewTabButton addTab={() => {
-                const addedTabName = addTab();
-                if (addedTabName === null) return;
-                setCurrentTabID(addedTabName);
+                const addedTabID = addTab();
+                if (addedTabID === null) return;
+                setCurrentTabID(addedTabID);
             }}/> : null}
 
         </div>

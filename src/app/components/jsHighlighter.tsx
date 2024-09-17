@@ -90,13 +90,14 @@ const preprocessorRegex = toCombinedRegex(
     '#version\\s+[13]00\\s+es'
 );
 
-export function JSHighlighter({children, errors}: {
-    children: string,
-    errors: Map<number, string[]>
+export function JSHighlighter({value, errors}: {
+    value: string,
+    errors?: Map<number, string[]>
 }): ReactNode {
+    errors ??= new Map;
     return <div className='js'>
-        <HighlighterWithErrors errors={errors} Highlighter={
-            ({children}) => <CodeHighlighter rules={{
+        <HighlighterWithErrors errors={errors}>
+            <CodeHighlighter rules={{
                 'keyword': keywordRegex,
                 'builtin-type': builtinTypeRegex,
                 'builtin-func': builtinFunctionRegex,
@@ -109,7 +110,7 @@ export function JSHighlighter({children, errors}: {
                 'comment': commentRegex,
                 'identifier': identifierRegex,
                 'preprocessor': preprocessorRegex
-            }}>{children}</CodeHighlighter>
-        }>{children}</HighlighterWithErrors>
+            }}>{value}</CodeHighlighter>
+        </HighlighterWithErrors>
     </div>
 }

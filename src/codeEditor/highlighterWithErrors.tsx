@@ -1,16 +1,22 @@
 import {ReactNode} from "react";
 import "./highlighterWithErrors.css"
 
-export function HighlighterWithErrors({Highlighter, children, errors}: {
-    children: string,
-    errors: Map<number, string[]>,
-    Highlighter: (props: { children: string }) => ReactNode
+export function HighlighterWithErrors({children, errors}: {
+    errors?: Map<number, string[]>,
+    children: ReactNode
 }): ReactNode {
+    errors ??= new Map;
+
+    let numLines = Math.max(...errors.keys()) + 1;
+    if (!Number.isFinite(numLines)) {
+        numLines = 1;
+    }
+
     return <div className='code-highlighter-container'>
-        <Highlighter>{children}</Highlighter>
+        {children}
         <div className='code-highlighter-errors'>
             {
-                new Array(children.split('\n').length).fill(null).map((_, i) => {
+                new Array(numLines).fill(null).map((_, i) => {
                     const lineErrors = errors.get(i);
                     if (!lineErrors) {
                         return <span className='error-line no-errors' key={i}></span>;

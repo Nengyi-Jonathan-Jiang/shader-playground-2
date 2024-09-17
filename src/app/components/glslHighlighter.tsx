@@ -109,13 +109,13 @@ const preprocessorRegex = toCombinedRegex(
     '#version\\s+[13]00\\s+es'
 );
 
-export function GLSLHighlighter({children, errors}: {
-    children: string,
+export function GLSLHighlighter({value, errors}: {
+    value: string,
     errors: Map<number, string[]>
 }): ReactNode {
     return <div className='glsl'>
-        <HighlighterWithErrors errors={errors} Highlighter={
-            ({children}) => <CodeHighlighter rules={{
+        <HighlighterWithErrors errors={errors}>
+            <CodeHighlighter rules={{
                 'keyword': keywordRegex,
                 'builtin-type': builtinTypeRegex,
                 'builtin-func': builtinFunctionRegex,
@@ -127,7 +127,7 @@ export function GLSLHighlighter({children, errors}: {
                 'comment': commentRegex,
                 'identifier': identifierRegex,
                 'preprocessor': preprocessorRegex
-            }}>{children}</CodeHighlighter>
-        }>{children}</HighlighterWithErrors>
+            }}>{value}</CodeHighlighter>
+        </HighlighterWithErrors>
     </div>
 }

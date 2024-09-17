@@ -62,11 +62,15 @@ export function useListenerOnWindow<K extends keyof WindowEventMap>(
  * </pre>
  */
 export function useListenerOnHTMLElement<E extends HTMLElement, K extends keyof HTMLElementEventMap>(
-    element: RefObject<E>,
+    element: RefObject<E> | E,
     listenerType: K,
     listener: (this: E, ev: HTMLElementEventMap[K]) => any,
     dependencies ?: DependencyList
 ): void {
+    if (element instanceof Element) {
+        element = {current: element};
+    }
+
     type listener_t = (this: HTMLElement, ev: HTMLElementEventMap[K]) => any;
 
     useEffect(() => {

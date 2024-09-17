@@ -1,23 +1,21 @@
 import {ReactNode} from "react";
-import {GLSLHighlighter} from "@/app/components/glslHighlighter";
 
 import "./codeEditor.css"
 
-type Highlighter = (props: { children: string, errors: Map<number, string[]> }) => ReactNode;
-
-
-export function CodeEditor({src, setSrc, errors, Highlighter}: {
-    src: string;
-    setSrc: (code: string) => void;
-    errors: Map<number, string[]>,
-    Highlighter: (props: { children: string, errors: Map<number, string[]> }) => ReactNode
+export function CodeEditor({value, setValue, errors, Highlighter}: {
+    value: string;
+    setValue: (code: string) => void;
+    errors?: Map<number, string[]>,
+    Highlighter: (props: { value: string, errors: Map<number, string[]> }) => ReactNode
 }) {
+    errors ??= new Map;
+
     return <div className="code-editor">
         <div className="code-overlay">
-            <Highlighter errors={errors}>{src}</Highlighter>
+            <Highlighter errors={errors} value={value}/>
         </div>
         <textarea className="code-input"
                   spellCheck="false"
-                  value={src} onChange={e => setSrc(e.target.value)}/>
+                  value={value} onChange={e => setValue(e.target.value)}/>
     </div>
 }

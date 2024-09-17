@@ -16,17 +16,21 @@ export function ShaderCodeEditor({mainCode, setMainCode, headerCode, errors}: {
     for (const [line, lineErrors] of errors ?? new Map) {
         if (line < numHeaderCodeLines) {
             headerCodeErrors.set(line, lineErrors);
-        } else {
+        }
+        else {
             mainCodeErrors.set(line - numHeaderCodeLines, lineErrors);
         }
     }
 
     return <div id="code-container" className="code">
-        <div id="code-header">
-            <GLSLHighlighter errors={headerCodeErrors}>{headerCode}</GLSLHighlighter>
-        </div>
-        <div id="code-body">
-            <CodeEditor src={mainCode} setSrc={setMainCode} errors={mainCodeErrors} Highlighter={GLSLHighlighter}/>
+        <div style={{width: "fit-content", minWidth: "100%"}}>
+            <div id="code-header">
+                <GLSLHighlighter errors={headerCodeErrors} value={headerCode}/>
+            </div>
+            <div id="code-body">
+                <CodeEditor value={mainCode} setValue={setMainCode} errors={mainCodeErrors}
+                            Highlighter={GLSLHighlighter}/>
+            </div>
         </div>
     </div>
 }
