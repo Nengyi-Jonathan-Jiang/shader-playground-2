@@ -1,4 +1,4 @@
-import React, {ReactNode, useRef} from "react";
+import React, {ReactNode, useRef, useState} from "react";
 import {useManualRerender} from "@/util/hooks";
 import {Tabs} from "@/tabs/tabs";
 import "./uniformsEditor.css"
@@ -6,8 +6,9 @@ import {CodeEditor} from "@/codeEditor/codeEditor";
 import {JSHighlighter} from "@/app/components/jsHighlighter";
 import {ShaderCanvasUniformType} from "@/app/webgl/ShaderCanvas";
 import {Select} from "@/util/select";
+import {launchEditor} from "next/dist/client/components/react-dev-overlay/internal/helpers/launchEditor";
 
-class UniformEditorData {
+export class CustomUniformData {
     private static nextID: number = 0;
 
     public name: string;
@@ -15,7 +16,7 @@ class UniformEditorData {
     public initSrc: string;
     public periodicSrc: string;
     public editable: boolean;
-    public id: any = UniformEditorData.nextID++;
+    public id: any = CustomUniformData.nextID++;
 
     constructor(
         name: string,
@@ -32,25 +33,81 @@ class UniformEditorData {
     }
 }
 
-function UniformsEditorTab({data, rerender: rerenderParent}: {
-    data: UniformEditorData,
+export class UniformEditor {
+    private readonly uniforms: CustomUniformData[];
+
+    constructor() {
+        this.uniforms = [];
+    }
+
+    addDirect(uniform: CustomUniformData) {
+        this.uniforms.push(uniform);
+    }
+
+    addNew(): number | null {
+        const uniform = new CustomUniformData('', 'float', '', '    return 0;');
+        uniform.name = `var${uniform.id}`;
+
+        this.uniforms.push(uniform);
+        return uniform.id;
+    }
+
+    deleteTab(tabID: number): boolean {
+        const deletedTabIndex = this.uniforms.findIndex(({id}) => id === tabID);
+        if (deletedTabIndex === -1) return false;
+        this.uniforms.splice(deletedTabIndex, 1);
+        return true;
+    }
+
+    get data() {
+        return this.uniforms;
+    }
+
+    static Renderer({editor, rerenderParent}: {
+        editor: UniformEditor,
+        rerenderParent?: () => void
+    }): ReactNode {
+        const rerender = (rerender => () => {
+            (rerenderParent ?? rerender)();
+        })(useManualRerender());
+
+        return <>
+            <Tabs tabs={editor.uniforms.map(data => ({
+                name: data.name,
+                deletable: data.editable,
+                id: data.id,
+                node: <UniformsEditorTab data={data} rerender={rerender}/>
+            }))} addTab={() => {
+                const addedTab = editor.addNew();
+                if (addedTab !== null) {
+                    rerender();
+                }
+                return addedTab;
+            }} deleteTab={(tabID) => {
+                if (editor.deleteTab(tabID)) {
+                    rerender();
+                }
+            }}/>
+        </>;
+    }
+}
+
+function UniformsEditorTab({data, rerender}: {
+    data: CustomUniformData,
     rerender: () => void
 }): ReactNode {
-    const rerender = useManualRerender();
-
-    return <div>
-        <div>
+    return <div className="uniforms-editor-tab-content">
+        <div className="uniforms-editor-tab-top">
             <label><span>Name: </span>
                 {
                     data.editable ? (
                         <input value={data.name} onChange={({target: {value}}) => {
                             data.name = value.replaceAll(/\W/g, '');
-                            rerenderParent();
+                            rerender();
                         }} onBlur={() => {
                             if (data.name.length === 0) {
-                                console.log('Woa');
                                 data.name = 'var' + data.id;
-                                rerenderParent();
+                                rerender();
                             }
                         }} spellCheck={false}/>
                     ) : <input value={data.name} readOnly/>
@@ -63,7 +120,7 @@ function UniformsEditorTab({data, rerender: rerenderParent}: {
             }} disabled={!data.editable} value={data.type} options={[
                 "float", "int", "vec2", "ivec2", "vec3", "vec4",
                 "mat2", "mat3", "mat4"
-            ] as ShaderCanvasUniformType[]}/>
+            ] as ShaderCanvasUniformType[]} containerClassName={"uniform-type-select"}/>
         </div>
         <div className='js'>
             {
@@ -77,7 +134,9 @@ function UniformsEditorTab({data, rerender: rerenderParent}: {
                 )
             }
 
-            <JSHighlighter value={`registerUniform("${data.name}", "float", (canvas, currentTime) => {`}/>
+            <JSHighlighter value={
+                `registerUniform("${data.name}", "float", (canvas, time, mousePosition, mouseButtons) => {`
+            }/>
             <div>
                 {
                     data.editable ? (
@@ -93,42 +152,4 @@ function UniformsEditorTab({data, rerender: rerenderParent}: {
             <JSHighlighter value='});'/>
         </div>
     </div>
-}
-
-export function UniformsEditor() {
-    const {current: tabs} = useRef<UniformEditorData[]>([
-        new UniformEditorData("Thing"),
-        new UniformEditorData(
-            "elapsedTime", "float",
-            "let startTime = -1;",
-            "    if(startTime == -1) {\n        startTime = currentTime;\n    }\n    return currentTime - startTime;",
-            false
-        ),
-        new UniformEditorData("Thing3"),
-    ]);
-    const rerender = useManualRerender();
-
-    return <>
-        <Tabs tabs={tabs.map(data => ({
-            name: data.name,
-            deletable: data.editable,
-            id: data.id,
-            node: <UniformsEditorTab data={data} rerender={rerender}/>
-        }))} addTab={() => {
-            const name = prompt('Enter tab name')?.replaceAll(/\W/g, '');
-            if (name === undefined || name.length === 0) {
-                alert('Invalid tab name');
-                return null;
-            }
-            const newData = new UniformEditorData(name, 'float', '', '');
-            tabs.push(newData);
-            rerender();
-            return newData.id;
-        }} deleteTab={(tabID) => {
-            const deletedTabIndex = tabs.findIndex(({id}) => id === tabID);
-            if (deletedTabIndex === -1) return;
-            tabs.splice(deletedTabIndex, 1);
-            rerender();
-        }}></Tabs>
-    </>;
 }

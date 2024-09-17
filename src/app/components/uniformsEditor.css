@@ -1,0 +1,6 @@
+.uniforms-editor-tab-top {
+    width: 100%;
+    display: flex;
+}
+
+.uniforms-editor-tab-content>.js {overflow-x: scroll;width: 100%;padding: 1ex;}

@@ -151,7 +151,7 @@ button#add-input:hover {
 div#canvas-container {
     width:      100%;
     height:     100vh;
-    background: grey;
+    background: var(--color-dark);
     overflow:   hidden;
 }
 

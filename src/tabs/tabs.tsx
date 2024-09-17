@@ -28,7 +28,7 @@ function TabHead({name, selectSelf, deleteSelf, isActive, deletable}: {
 
 function NewTabButton({addTab}: { addTab: () => void }) {
     return <div className='new-tab-button'>
-        <button onClick={() => addTab()}></button>
+        <button onClick={addTab}></button>
     </div>;
 }
 
@@ -51,6 +51,10 @@ export function Tabs<TabID extends Key>({tabs, addTab, deleteTab}: {
     }
     if (tabs.find(({id}) => id === null)) {
         console.warn('Warning: tab ids cannot be null');
+    }
+
+    if (currentTabID !== null && !tabs.find(({id}) => id === currentTabID) && tabs.length > 0) {
+        setCurrentTabID(tabs[tabs.length - 1].id);
     }
 
     return <div className='tabs-container'>

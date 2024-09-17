@@ -1,5 +1,5 @@
 import React, {ReactNode, useEffect, useRef} from "react";
-import {useAnimation, useListenerOnHTMLElement} from "@/util/hooks";
+import {useAnimation, useListenerOnHTMLElement, useListenerOnWindow} from "@/util/hooks";
 
 export interface ShaderCanvasUniformTypeMap {
     float: number,
@@ -38,6 +38,14 @@ export class ShaderCanvas {
         gl.enableVertexAttribArray(0);
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
         gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    }
+
+    get width() {
+        return this.canvasElement.width;
+    }
+
+    get height() {
+        return this.canvasElement.height;
     }
 
     setCanvasSize(width: number, height: number) {
@@ -111,8 +119,6 @@ export class ShaderCanvas {
 
     draw() {
         if (this.program === null) return;
-        let a = this.canvasElement.width / this.canvasElement.height;
-        this.setUniform('aspectRatio', "float", a);
         this.webglContext.clear(
             this.webglContext.COLOR_BUFFER_BIT | this.webglContext.DEPTH_BUFFER_BIT
         );
@@ -173,17 +179,18 @@ export class ShaderCanvas {
 
     public static Renderer({canvas, getUniforms}: {
         canvas: ShaderCanvas,
-        getUniforms: (canvas: ShaderCanvas, deltaTime: DOMHighResTimeStamp) => {
-            name: string,
-            type: keyof ShaderCanvasUniformTypeMap,
-            value: number | number[]
-        }[]
+        getUniforms: (data: {
+            canvas: ShaderCanvas,
+            currentTime: DOMHighResTimeStamp,
+            mousePosition: [number, number],
+            mouseButtonsDown: number,
+        }) => { name: string; type: keyof ShaderCanvasUniformTypeMap; value: number | number[] }[]
     }): ReactNode {
         const placeholderRef = useRef<HTMLDivElement>(null);
         const canvasElement = canvas.canvasElement;
 
         const mousePosition = useRef<[number, number]>([0, 0]);
-        const isMouseButtonDown = useRef<boolean>(false);
+        const mouseButtonsDown = useRef<number>(0);
 
         useEffect(() => {
             const placeholderElement = placeholderRef.current;
@@ -193,23 +200,42 @@ export class ShaderCanvas {
         });
 
         // Mouse position tracking
-        const updateMousePosition = (e: MouseEvent) => {
-            const canvasBoundingBox = canvasElement.getBoundingClientRect();
+        const updateMouse = ({buttons, clientX, clientY}: {
+            buttons: number,
+            clientX: number,
+            clientY: number
+        }) => {
+            const {height, left, right, top, bottom, width} = canvasElement.getBoundingClientRect();
 
             // Update the position if the position is in bounds
-
-            const x = (e.clientX - canvasBoundingBox.left - canvasBoundingBox.width / 2) / canvasElement.height;
-            const y = (e.clientY - canvasBoundingBox.top - canvasBoundingBox.height / 2) / canvasElement.height;
-            mousePosition.current = [x, y];
+            if (left <= clientX && clientX <= right && top <= clientY && clientY <= bottom) {
+                const x = 2 * (clientX - left - width / 2) / canvasElement.height;
+                const y = -2 * (clientY - top - height / 2) / canvasElement.height;
+                mousePosition.current = [x, y];
+            } else {
+                mousePosition.current = [0, 0];
+            }
+            mouseButtonsDown.current = buttons;
         };
-        useListenerOnHTMLElement(canvasElement, "mouseenter", updateMousePosition);
-        useListenerOnHTMLElement(canvasElement, "mousemove", updateMousePosition);
-        useListenerOnHTMLElement(canvasElement, "mouseleave", updateMousePosition);
 
+        useListenerOnHTMLElement(canvasElement, "mouseup", updateMouse);
+        useListenerOnHTMLElement(canvasElement, "mousedown", updateMouse);
+        useListenerOnHTMLElement(canvasElement, "mousemove", updateMouse);
+        useListenerOnHTMLElement(canvasElement, "mouseenter", updateMouse);
+        useListenerOnHTMLElement(canvasElement, "mouseleave", updateMouse);
+        useListenerOnHTMLElement(canvasElement, "contextmenu", e => e.preventDefault());
+        useListenerOnWindow(window, "blur", updateMouse.bind(null, {
+            buttons: 0, clientX: 0, clientY: 0
+        }));
 
-        useAnimation((currTime, deltaTime) => {
+        useAnimation((currTime) => {
             canvas.setCanvasSize(canvasElement.clientWidth, canvasElement.clientHeight);
-            canvas.setUniforms(getUniforms(canvas, currTime));
+            canvas.setUniforms(getUniforms({
+                canvas,
+                currentTime: currTime,
+                mousePosition: [...mousePosition.current],
+                mouseButtonsDown: mouseButtonsDown.current
+            }));
             canvas.draw();
         })
 
