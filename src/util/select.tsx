@@ -83,7 +83,7 @@ export function Select<OptionValueType, ActiveOptionRefType extends HTMLElement,
         })
     }, [optionRefs, isOpen]);
 
-    useListenerOnWindow(window, "mousedown", e => {
+    useListenerOnWindow("mousedown", e => {
         if (containerRef.current === null || e.target === null) return;
 
         if (!containerRef.current.contains(e.target as Node)) {

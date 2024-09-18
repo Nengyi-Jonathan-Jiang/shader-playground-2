@@ -1,3 +1,5 @@
+"use client";
+
 import React, {ReactNode, useEffect, useRef} from "react";
 import {useAnimation, useListenerOnHTMLElement, useListenerOnWindow} from "@/util/hooks";
 
@@ -23,12 +25,18 @@ export type ShaderCanvasUniformData = {
 
 export class ShaderCanvas {
     private program: WebGLProgram | null = null;
-    readonly canvasElement: HTMLCanvasElement;
-    private readonly webglContext: WebGL2RenderingContext;
-    readonly errors: { line: number, message: string }[] = [];
+    private _canvasElement: HTMLCanvasElement | null = null;
+    private webglContext: WebGL2RenderingContext | null = null;
+    public readonly errors: { line: number, message: string }[] = [];
 
-    constructor() {
-        this.canvasElement = document.createElement('canvas');
+    public get canvasElement(): HTMLCanvasElement {
+        this.initCanvas();
+        return this._canvasElement as HTMLCanvasElement;
+    }
+
+    initCanvas() {
+        if (this._canvasElement) return;
+        this._canvasElement = document.createElement('canvas');
         const canvas = this.canvasElement;
         const gl = canvas.getContext("webgl2", {antialias: false});
         if (!gl) throw Error("ERROR: WEBGL NOT SUPPORTED");
@@ -47,20 +55,25 @@ export class ShaderCanvas {
     }
 
     get width() {
+        if (!this.canvasElement) return 1;
         return this.canvasElement.width;
     }
 
     get height() {
+        if (!this.canvasElement) return 1;
         return this.canvasElement.height;
     }
 
     setCanvasSize(width: number, height: number) {
+        if (!this.canvasElement || !this.webglContext) return;
         this.canvasElement.width = width;
         this.canvasElement.height = height;
         this.webglContext.viewport(0, 0, width, height);
     }
 
     setProgram(shaderSource: string, fragmentSource: string) {
+        if (!this.webglContext) return;
+
         this.errors.splice(0, Number.POSITIVE_INFINITY);
         this.program = this.createProgramFromSources(
             this.webglContext,
@@ -75,6 +88,7 @@ export class ShaderCanvas {
         type: K,
         data: ShaderCanvasUniformTypeMap[K]
     ) {
+        if (this.webglContext === null) return;
         if (this.program === null) return;
 
         const location = this.webglContext.getUniformLocation(this.program, name);
@@ -128,6 +142,7 @@ export class ShaderCanvas {
     }
 
     draw() {
+        if (this.webglContext === null) return;
         if (this.program === null) return;
         this.webglContext.clear(
             this.webglContext.COLOR_BUFFER_BIT | this.webglContext.DEPTH_BUFFER_BIT
@@ -197,15 +212,19 @@ export class ShaderCanvas {
         }) => ShaderCanvasUniformData[]
     }): ReactNode {
         const placeholderRef = useRef<HTMLDivElement>(null);
-        const canvasElement = canvas.canvasElement;
 
         const mousePosition = useRef<[number, number]>([0, 0]);
         const mouseButtonsDown = useRef<number>(0);
 
         useEffect(() => {
+            console.log('Initializing canvas');
+            canvas.initCanvas();
+        }, []);
+
+        useEffect(() => {
             const placeholderElement = placeholderRef.current;
             if (placeholderElement) {
-                placeholderElement.replaceWith(canvasElement);
+                placeholderElement.replaceWith(canvas.canvasElement);
             }
         });
 
@@ -218,12 +237,12 @@ export class ShaderCanvas {
         }) => {
             const {buttons, clientX, clientY} = e;
 
-            const {height, left, right, top, bottom, width} = canvasElement.getBoundingClientRect();
+            const {height, left, right, top, bottom, width} = canvas.canvasElement.getBoundingClientRect();
 
             // Update the position if the position is in bounds
             if (left <= clientX && clientX <= right && top <= clientY && clientY <= bottom) {
-                const x = 2 * (clientX - left - width / 2) / canvasElement.height;
-                const y = -2 * (clientY - top - height / 2) / canvasElement.height;
+                const x = 2 * (clientX - left - width / 2) / canvas.canvasElement.height;
+                const y = -2 * (clientY - top - height / 2) / canvas.canvasElement.height;
                 mousePosition.current = [x, y];
                 mouseButtonsDown.current = buttons;
             } else {
@@ -236,18 +255,23 @@ export class ShaderCanvas {
             if (e.preventDefault) e.preventDefault();
         };
 
-        useListenerOnHTMLElement(canvasElement, "mouseup", updateMouse);
-        useListenerOnHTMLElement(canvasElement, "mousedown", updateMouse);
-        useListenerOnWindow(window, "mousemove", updateMouse);
-        useListenerOnHTMLElement(canvasElement, "mouseenter", updateMouse);
-        useListenerOnHTMLElement(canvasElement, "mouseleave", updateMouse);
-        useListenerOnHTMLElement(canvasElement, "contextmenu", e => e.preventDefault());
-        useListenerOnWindow(window, "blur", updateMouse.bind(null, {
+        const fakeCanvasElementRef = {
+            get current() {
+                return canvas.canvasElement;
+            }
+        };
+        useListenerOnHTMLElement(fakeCanvasElementRef, "mouseup", updateMouse);
+        useListenerOnHTMLElement(fakeCanvasElementRef, "mousedown", updateMouse);
+        useListenerOnWindow("mousemove", updateMouse);
+        useListenerOnHTMLElement(fakeCanvasElementRef, "mouseenter", updateMouse);
+        useListenerOnHTMLElement(fakeCanvasElementRef, "mouseleave", updateMouse);
+        useListenerOnHTMLElement(fakeCanvasElementRef, "contextmenu", e => e.preventDefault());
+        useListenerOnWindow("blur", updateMouse.bind(null, {
             buttons: 0, clientX: 0, clientY: 0
         }));
 
         useAnimation((currentTime) => {
-            canvas.setCanvasSize(canvasElement.clientWidth, canvasElement.clientHeight);
+            canvas.setCanvasSize(canvas.canvasElement.clientWidth, canvas.canvasElement.clientHeight);
             canvas.setUniforms(getUniforms({
                 canvas,
                 currentTime,

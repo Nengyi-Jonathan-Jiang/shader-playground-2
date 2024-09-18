@@ -35,16 +35,15 @@ export function useManualRerender(): () => void {
  * </pre>
  */
 export function useListenerOnWindow<K extends keyof WindowEventMap>(
-    window: Window,
     listenerType: K,
     listener: (this: Window, ev: WindowEventMap[K]) => any,
-    dependencies ?: DependencyList
+    dependencies?: DependencyList
 ): void {
     useEffect(() => {
         window.addEventListener(listenerType, listener);
 
         return () => {
-            window.removeEventListener(listenerType, listener);
+            (window as Window).removeEventListener(listenerType, listener);
         }
     }, dependencies ?? []);
 }
@@ -67,7 +66,7 @@ export function useListenerOnHTMLElement<E extends HTMLElement, K extends keyof 
     listener: (this: E, ev: HTMLElementEventMap[K]) => any,
     dependencies ?: DependencyList
 ): void {
-    if (element instanceof Element) {
+    if (!("current" in element)) {
         element = {current: element};
     }
 
@@ -93,8 +92,7 @@ function startAnimatingIfNotAnimating() {
         if (animations.size > 0) {
             animations.forEach(callback => callback.call(null, t));
             requestAnimationFrame(f)
-        }
-        else {
+        } else {
             isCurrentlyAnimating = false;
         }
     })
