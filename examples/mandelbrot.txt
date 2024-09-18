@@ -1,0 +1,65 @@
+// GLSL
+
+#define TOTAL_ITERATIONS 1600
+#define BASE_ITERATIONS 100
+
+float f(float x, float intensity) {
+    return pow(x / intensity, intensity) * exp(intensity - x);
+}
+
+vec3 color(float shade) {
+    float s = f(1.0 / (1.0 - pow(shade, 0.5)), 3.0);
+    return vec3(0, pow(s, 2.0), s);
+}
+
+void main(){
+    vec2 z = vec2(0);
+    vec2 c = (fragCoord / zoom.z + zoom.xy);
+
+    float iterations = 0.0;
+    float adjustable_iterations = min(float(BASE_ITERATIONS) * log(2.71828 + zoom.z), float(TOTAL_ITERATIONS));
+    for(int i = 0; i < TOTAL_ITERATIONS; i++) {
+        z = vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + c;
+        iterations += 1.0;
+        if(distance(z, vec2(0)) >= 20.0 || iterations >= adjustable_iterations) {
+            break;
+        }
+    }
+
+    float iterations_percent = iterations / (adjustable_iterations + 1.0);
+
+    fragColor = vec4(color(iterations_percent), 1.0);
+}
+
+// JS
+
+const zoomAmount = [0.5];
+const zoomCenter = [-0.75, 0.001];
+
+const clamp = (x, x_min, x_max) => {
+    if(x < x_min) return x_min;
+    if(x > x_max) return x_max;
+    return x;
+}
+
+registerUniform("zoom", "vec3", (canvas, time, mousePosition, mouseButtons) => {
+    const zoomMultiplier = ((mouseButtons & 1) ? 1.02 : 1) / ((mouseButtons & 2) ? 1.02 : 1);
+    zoomCenter[0] = clamp(
+        zoomCenter[0] + (zoomMultiplier - 1) * mousePosition[0] / zoomAmount,
+        -2,
+        0.5
+    );
+    zoomCenter[1] = clamp(
+        zoomCenter[1] + (zoomMultiplier - 1) * mousePosition[1] / zoomAmount,
+        -1.5,
+        1.5
+    );
+    zoomAmount[0] = clamp(
+        zoomAmount[0] * zoomMultiplier,
+        0.7,
+        1e5
+    );
+
+
+    return [...zoomCenter, zoomAmount];
+});

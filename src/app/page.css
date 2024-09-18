@@ -159,3 +159,9 @@ div#canvas-container > canvas {
     width:  100%;
     height: 100%;
 }
+
+div.tabs-container {
+    --tab-dark-background:        var(--color-darkest) !important;
+    --tab-light-background:       var(--color-darker) !important;
+    --tab-active-highlight-color: var(--color-medium) !important;
+}

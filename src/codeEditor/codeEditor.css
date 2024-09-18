@@ -1,15 +1,19 @@
 div.code-editor {
-    position:   relative;
-    min-width:  100%;
+    position:  relative;
+    min-width: 100%;
+    width:     fit-content;
+    height:    fit-content;
+}
+
+div.code-editor:first-child:last-child {
     min-height: 100%;
-    width:      fit-content;
-    height:     fit-content;
 }
 
 div.code-overlay {
     white-space: pre;
     width:       100%;
     height:      fit-content;
+    user-select: none;
 }
 
 textarea.code-input {

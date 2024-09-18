@@ -23,7 +23,7 @@ export function ShaderCodeEditor({mainCode, setMainCode, headerCode, errors}: {
     }
 
     return <div id="code-container" className="code">
-        <div style={{width: "fit-content", minWidth: "100%"}}>
+        <div style={{width: "fit-content", minWidth: "100%", minHeight: "100%", display: "flex", flexDirection: "column"}}>
             <div id="code-header">
                 <GLSLHighlighter errors={headerCodeErrors} value={headerCode}/>
             </div>

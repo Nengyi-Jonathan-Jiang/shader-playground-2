@@ -41,5 +41,5 @@ export function CodeHighlighter({children: input, rules}: {
         }
     }
 
-    return <pre>{elements}<span style={{fontSize: 0}}>-</span></pre>;
+    return <pre>{elements}<span style={{fontSize: 0, userSelect: 'none'}}>-</span></pre>;
 }

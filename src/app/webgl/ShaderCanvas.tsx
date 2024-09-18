@@ -4,16 +4,22 @@ import {useAnimation, useListenerOnHTMLElement, useListenerOnWindow} from "@/uti
 export interface ShaderCanvasUniformTypeMap {
     float: number,
     int: number,
-    vec2: [number, number],
-    ivec2: [number, number],
-    vec3: [number, number, number],
-    vec4: [number, number, number, number],
-    mat2: number[],
-    mat3: number[],
-    mat4: number[],
+    vec2: readonly [number, number],
+    ivec2: readonly [number, number],
+    vec3: readonly [number, number, number],
+    vec4: readonly [number, number, number, number],
+    mat2: readonly number[],
+    mat3: readonly number[],
+    mat4: readonly number[],
 }
 
 export type ShaderCanvasUniformType = keyof ShaderCanvasUniformTypeMap;
+
+export type ShaderCanvasUniformData = {
+    name: string;
+    type: keyof ShaderCanvasUniformTypeMap;
+    value: number | readonly number[]
+};
 
 export class ShaderCanvas {
     private program: WebGLProgram | null = null;
@@ -74,46 +80,50 @@ export class ShaderCanvas {
         const location = this.webglContext.getUniformLocation(this.program, name);
         if (location === null) return;
 
-        switch (type) {
-            case "float":
-                // @ts-ignore
-                return this.webglContext.uniform1f(location, data);
-            case "int":
-                // @ts-ignore
-                return this.webglContext.uniform1i(location, data);
-            case "ivec2":
-                // @ts-ignore
-                return this.webglContext.uniform2i(location, ...data);
-            case "vec2":
-                // @ts-ignore
-                return this.webglContext.uniform2f(location, ...data);
-            case "vec3":
-                // @ts-ignore
-                return this.webglContext.uniform3f(location, ...data);
-            case "vec4":
-                // @ts-ignore
-                return this.webglContext.uniform4f(location, ...data);
-            case "mat2":
-                // @ts-ignore
-                return this.webglContext.uniformMatrix2fv(location, false, data);
-            case "mat3":
-                // @ts-ignore
-                return this.webglContext.uniformMatrix3fv(location, false, data);
-            case "mat4":
-                // @ts-ignore
-                return this.webglContext.uniformMatrix4fv(location, false, data);
-            default:
-                return;
+        try {
+
+            switch (type) {
+                case "float":
+                    // @ts-ignore
+                    return this.webglContext.uniform1f(location, data);
+                case "int":
+                    // @ts-ignore
+                    return this.webglContext.uniform1i(location, data);
+                case "ivec2":
+                    // @ts-ignore
+                    return this.webglContext.uniform2i(location, ...data);
+                case "vec2":
+                    // @ts-ignore
+                    return this.webglContext.uniform2f(location, ...data);
+                case "vec3":
+                    // @ts-ignore
+                    return this.webglContext.uniform3f(location, ...data);
+                case "vec4":
+                    // @ts-ignore
+                    return this.webglContext.uniform4f(location, ...data);
+                case "mat2":
+                    // @ts-ignore
+                    return this.webglContext.uniformMatrix2fv(location, false, data);
+                case "mat3":
+                    // @ts-ignore
+                    return this.webglContext.uniformMatrix3fv(location, false, data);
+                case "mat4":
+                    // @ts-ignore
+                    return this.webglContext.uniformMatrix4fv(location, false, data);
+                default:
+                    return;
+            }
+        } finally {
         }
     }
 
     setUniforms(uniforms: {
         name: string,
         type: keyof ShaderCanvasUniformTypeMap,
-        value: number | number[]
+        value: number | readonly number[]
     }[]) {
         for (const {name, type, value} of uniforms) {
-            this.setUniform(name, type, value);
+            this.setUniform(name, type, value as ShaderCanvasUniformTypeMap[typeof type]);
         }
     }
 
@@ -182,9 +192,9 @@ export class ShaderCanvas {
         getUniforms: (data: {
             canvas: ShaderCanvas,
             currentTime: DOMHighResTimeStamp,
-            mousePosition: Readonly<[number, number]>,
+            mousePosition: readonly [number, number],
             mouseButtonsDown: number,
-        }) => { name: string; type: keyof ShaderCanvasUniformTypeMap; value: number | number[] }[]
+        }) => ShaderCanvasUniformData[]
     }): ReactNode {
         const placeholderRef = useRef<HTMLDivElement>(null);
         const canvasElement = canvas.canvasElement;
@@ -200,11 +210,14 @@ export class ShaderCanvas {
         });
 
         // Mouse position tracking
-        const updateMouse = ({buttons, clientX, clientY}: {
+        const updateMouse = (e: {
             buttons: number,
             clientX: number,
-            clientY: number
+            clientY: number,
+            preventDefault?: () => void
         }) => {
+            const {buttons, clientX, clientY} = e;
+
             const {height, left, right, top, bottom, width} = canvasElement.getBoundingClientRect();
 
             // Update the position if the position is in bounds
@@ -212,16 +225,20 @@ export class ShaderCanvas {
                 const x = 2 * (clientX - left - width / 2) / canvasElement.height;
                 const y = -2 * (clientY - top - height / 2) / canvasElement.height;
                 mousePosition.current = [x, y];
-            }
-            else {
+                mouseButtonsDown.current = buttons;
+            } else {
                 mousePosition.current = [0, 0];
+                // Only keep the buttons that are already down, and update any
+                // buttons that have been released
+                mouseButtonsDown.current &= buttons;
             }
-            mouseButtonsDown.current = buttons;
+
+            if (e.preventDefault) e.preventDefault();
         };
 
         useListenerOnHTMLElement(canvasElement, "mouseup", updateMouse);
         useListenerOnHTMLElement(canvasElement, "mousedown", updateMouse);
-        useListenerOnHTMLElement(canvasElement, "mousemove", updateMouse);
+        useListenerOnWindow(window, "mousemove", updateMouse);
         useListenerOnHTMLElement(canvasElement, "mouseenter", updateMouse);
         useListenerOnHTMLElement(canvasElement, "mouseleave", updateMouse);
         useListenerOnHTMLElement(canvasElement, "contextmenu", e => e.preventDefault());

@@ -4,7 +4,7 @@ import "./page.css";
 import React, {useEffect, useRef, useState} from "react";
 import {HorizontalResizableDoublePane, VerticalResizableDoublePane} from "@/resizable/resizable";
 import {ShaderCodeEditor} from "@/app/components/glslEditor";
-import {ShaderCanvas} from "@/app/webgl/ShaderCanvas";
+import {ShaderCanvas, ShaderCanvasUniformData} from "@/app/webgl/ShaderCanvas";
 import {CustomUniformData, UniformEditor} from "@/app/components/uniformsEditor";
 import {render} from "react-dom";
 import {useManualRerender} from "@/util/hooks";
@@ -18,18 +18,6 @@ void main(){
     gl_Position = vec4(a_position, 1.0, 1.0);
     fragCoord = vec2(1.0 / aspectRatio, 1.0) * a_position;
 }`;
-
-const defaultHeaderCode = `#version 300 es
-precision mediump float;
-in vec2 fragCoord;
-out vec4 fragColor;
-
-uniform float aspectRatio;
-uniform vec2 mousePosition;
-uniform int mouseButtons;
-uniform float elapsedTime;
-
-`;
 
 const defaultMainCode = `void main(){
     fragColor = vec4(0.5 + 0.5 * cos(fragCoord.xyx + vec3(0,2,4)), 1.0);
@@ -62,6 +50,13 @@ const builtinUniformData = [
         false
     ),
 ];
+builtinUniformData.forEach(i => i.evaluateSource());
+
+function generateHeaderCodeForUniforms(uniformsEditor: UniformEditor) {
+    return `#version 300 es\nprecision mediump float;\nin vec2 fragCoord;\nout vec4 fragColor;\n\n${
+        uniformsEditor.data.map(({name, type}) => `uniform ${type} ${name};`).join('\n')
+    }\n`;
+}
 
 export default function Home() {
     const rerender = useManualRerender();
@@ -77,24 +72,50 @@ export default function Home() {
     });
 
     const [mainCode, setMainCode] = useState(defaultMainCode);
-    const headerCode = `#version 300 es\nprecision mediump float;\nin vec2 fragCoord;\nout vec4 fragColor;\n\n${
-        uniformsEditor.data.map(({name, type}) => `uniform ${type} ${name};`).join('\n')
-    }\n`;
+    const headerCode = generateHeaderCodeForUniforms(uniformsEditor);
 
     // On recompile
     const startTime = useRef(-1);
     useEffect(() => {
         startTime.current = -1;
-        shaderCanvas.setProgram(vertShader, headerCode + '\n' + mainCode);
-        // Apply uniforms
     }, [mainCode, headerCode]);
 
+    shaderCanvas.setProgram(vertShader, headerCode + '\n' + mainCode);
     const errors = new Map<number, string[]>;
     for (const {line, message} of shaderCanvas.errors) {
         if (!errors.has(line)) {
             errors.set(line, []);
         }
         (errors.get(line) as string[]).push(message);
+    }
+
+    const getUniforms = ({canvas, currentTime, mousePosition, mouseButtonsDown}: {
+        canvas: ShaderCanvas,
+        currentTime: number,
+        mousePosition: readonly [number, number],
+        mouseButtonsDown: number
+    }) => {
+        if (startTime.current == -1) {
+            startTime.current = currentTime;
+        }
+
+        const res: ShaderCanvasUniformData[] = [];
+        uniformsEditor.data.forEach(i => {
+            if (i.shaderUniformCallback !== null) {
+                try {
+                    const value = i.shaderUniformCallback(canvas, currentTime, mousePosition, mouseButtonsDown);
+                    res.push({
+                        name: i.name,
+                        type: i.type,
+                        value
+                    });
+                } catch (e) {
+                    return;
+                }
+            }
+        })
+
+        return res;
     }
 
     return (
@@ -114,35 +135,7 @@ export default function Home() {
                 }/>
             } right={
                 <div id="canvas-container">
-                    <ShaderCanvas.Renderer canvas={shaderCanvas}
-                                           getUniforms={({canvas, currentTime, mousePosition, mouseButtonsDown}) => {
-                                               if (startTime.current == -1) {
-                                                   startTime.current = currentTime;
-                                               }
-
-                                               return [
-                                                   {
-                                                       name: "aspectRatio",
-                                                       type: "float",
-                                                       value: canvas.height / canvas.width
-                                                   },
-                                                   {
-                                                       name: "elapsedTime",
-                                                       type: "float",
-                                                       value: currentTime - startTime.current
-                                                   },
-                                                   {
-                                                       name: "mousePosition",
-                                                       type: "vec2",
-                                                       value: mousePosition
-                                                   },
-                                                   {
-                                                       name: "mouseButtons",
-                                                       type: "int",
-                                                       value: mouseButtonsDown
-                                                   }
-                                               ];
-                                           }}/>
+                    <ShaderCanvas.Renderer canvas={shaderCanvas} getUniforms={getUniforms}/>
                 </div>
             }/>
         </div>

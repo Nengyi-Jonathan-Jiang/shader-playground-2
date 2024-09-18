@@ -62,7 +62,7 @@ const builtinVarRegex = toCombinedRegex(
 
 const reservedKeywordRegex = toCombinedRegex("");
 
-const literalsRegex = toCombinedRegex("true", "false", "\\d+\\.\\d*|\\.\\d+|\\d+", "NaN");
+const literalsRegex = toCombinedRegex("true", "false", "(\\d+\\.\\d*|\\.\\d+|\\d+)(e-?\\d+)?", "NaN");
 const stringLiteralRegex = toCombinedRegex('"([^"\\\\]|\\\\.)*"', "'([^'\\\\]|\\\\.)*'")
 
 const operatorsRegex = toCombinedRegex(...`

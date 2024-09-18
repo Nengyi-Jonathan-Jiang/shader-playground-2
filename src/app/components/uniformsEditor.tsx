@@ -4,8 +4,9 @@ import {Tabs} from "@/tabs/tabs";
 import "./uniformsEditor.css"
 import {CodeEditor} from "@/codeEditor/codeEditor";
 import {JSHighlighter} from "@/app/components/jsHighlighter";
-import {ShaderCanvasUniformType} from "@/app/webgl/ShaderCanvas";
+import {ShaderCanvas, ShaderCanvasUniformType, ShaderCanvasUniformTypeMap} from "@/app/webgl/ShaderCanvas";
 import {Select} from "@/util/select";
+import {evalStatementsInContext} from "@/eval/eval";
 
 export class CustomUniformData {
     private static nextID: number = 0;
@@ -16,6 +17,8 @@ export class CustomUniformData {
     public periodicSrc: string;
     public editable: boolean;
     public id: any = CustomUniformData.nextID++;
+
+    public shaderUniformCallback: ShaderUniformCallback | null = null;
 
     constructor(
         name: string,
@@ -30,7 +33,45 @@ export class CustomUniformData {
         this.periodicSrc = periodicSrc;
         this.editable = editable;
     }
+
+    private get combinedSource() {
+        return `${
+            this.initSrc
+        }\nregisterUniform("${
+            this.name
+        }", "${
+            this.type
+        }", (canvas, time, mousePosition, mouseButtons) => {\n${
+            this.periodicSrc
+        }\n});`
+    }
+
+    evaluateSource() {
+        try {
+            evalStatementsInContext(this.combinedSource, {
+                registerUniform: (
+                    _: any,
+                    __: any,
+                    callBack: ShaderUniformCallback
+                ) => {
+                    this.shaderUniformCallback = callBack;
+                },
+                ...Math
+            });
+        } catch (e) {
+            console.error(e);
+            alert(`Error running uniform code for "${this.name}" :\n${e}`);
+            this.shaderUniformCallback = null;
+        }
+    }
 }
+
+type ShaderUniformCallback = (
+    canvas: ShaderCanvas,
+    time: number,
+    mousePosition: readonly [number, number],
+    mouseButtons: number
+) => ShaderCanvasUniformTypeMap[ShaderCanvasUniformType];
 
 export class UniformEditor {
     private readonly uniforms: CustomUniformData[];
@@ -95,9 +136,9 @@ function UniformsEditorTab({data, rerender}: {
     data: CustomUniformData,
     rerender: () => void
 }): ReactNode {
-    return <div className="uniforms-editor-tab-content">
+    return <div className="uniforms-editor-tab-content" data-disabled={data.editable ? null : ""}>
         <div className="uniforms-editor-tab-top">
-            <label><span>Name: </span>
+            <span><span>Name: </span>
                 {
                     data.editable ? (
                         <input value={data.name} onChange={({target: {value}}) => {
@@ -109,11 +150,11 @@ function UniformsEditorTab({data, rerender}: {
                                 rerender();
                             }
                         }} spellCheck={false}/>
-                    ) : <input value={data.name} readOnly/>
+                    ) : <input value={data.name} readOnly tabIndex={-1}/>
                 }
-            </label>
-            <label className="uniform-type-select">
-                <span>Type:&nbsp;</span>
+            </span>
+            <span>Type:&nbsp;</span>
+            <span className="uniform-type-select">
                 <Select onChange={(value) => {
                     console.log(value);
                     data.type = value;
@@ -122,7 +163,10 @@ function UniformsEditorTab({data, rerender}: {
                     "float", "int", "vec2", "ivec2", "vec3", "vec4",
                     "mat2", "mat3", "mat4"
                 ] as ShaderCanvasUniformType[]}/>
-            </label>
+            </span>
+            {
+                data.editable ? <button onClick={() => data.evaluateSource()}>{"Run |>"}</button> : null
+            }
         </div>
         <div className='js'>
             {
@@ -137,7 +181,7 @@ function UniformsEditorTab({data, rerender}: {
             }
 
             <JSHighlighter value={
-                `registerUniform("${data.name}", "float", (canvas, time, mousePosition, mouseButtons) => {`
+                `registerUniform("${data.name}", "${data.type}", (canvas, time, mousePosition, mouseButtons) => {`
             }/>
             <div>
                 {
