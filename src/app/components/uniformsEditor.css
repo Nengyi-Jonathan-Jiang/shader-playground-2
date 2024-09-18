@@ -1,6 +1,11 @@
 .uniforms-editor-tab-top {
     width: 100%;
     display: flex;
+    margin-bottom: 2px;
 }
 
 .uniforms-editor-tab-content>.js {overflow-x: scroll;width: 100%;padding: 1ex;}
+
+label.uniform-type-select {
+    display: flex;
+}

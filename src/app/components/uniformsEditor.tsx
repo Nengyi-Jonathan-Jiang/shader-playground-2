@@ -1,4 +1,4 @@
-import React, {ReactNode, useRef, useState} from "react";
+import React, {ReactNode} from "react";
 import {useManualRerender} from "@/util/hooks";
 import {Tabs} from "@/tabs/tabs";
 import "./uniformsEditor.css"
@@ -6,7 +6,6 @@ import {CodeEditor} from "@/codeEditor/codeEditor";
 import {JSHighlighter} from "@/app/components/jsHighlighter";
 import {ShaderCanvasUniformType} from "@/app/webgl/ShaderCanvas";
 import {Select} from "@/util/select";
-import {launchEditor} from "next/dist/client/components/react-dev-overlay/internal/helpers/launchEditor";
 
 export class CustomUniformData {
     private static nextID: number = 0;
@@ -113,14 +112,17 @@ function UniformsEditorTab({data, rerender}: {
                     ) : <input value={data.name} readOnly/>
                 }
             </label>
-            <Select onChange={(value) => {
-                console.log(value);
-                data.type = value;
-                rerender();
-            }} disabled={!data.editable} value={data.type} options={[
-                "float", "int", "vec2", "ivec2", "vec3", "vec4",
-                "mat2", "mat3", "mat4"
-            ] as ShaderCanvasUniformType[]} containerClassName={"uniform-type-select"}/>
+            <label className="uniform-type-select">
+                <span>Type:&nbsp;</span>
+                <Select onChange={(value) => {
+                    console.log(value);
+                    data.type = value;
+                    rerender();
+                }} disabled={!data.editable} value={data.type} options={[
+                    "float", "int", "vec2", "ivec2", "vec3", "vec4",
+                    "mat2", "mat3", "mat4"
+                ] as ShaderCanvasUniformType[]}/>
+            </label>
         </div>
         <div className='js'>
             {

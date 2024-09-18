@@ -182,7 +182,7 @@ export class ShaderCanvas {
         getUniforms: (data: {
             canvas: ShaderCanvas,
             currentTime: DOMHighResTimeStamp,
-            mousePosition: [number, number],
+            mousePosition: Readonly<[number, number]>,
             mouseButtonsDown: number,
         }) => { name: string; type: keyof ShaderCanvasUniformTypeMap; value: number | number[] }[]
     }): ReactNode {
@@ -212,7 +212,8 @@ export class ShaderCanvas {
                 const x = 2 * (clientX - left - width / 2) / canvasElement.height;
                 const y = -2 * (clientY - top - height / 2) / canvasElement.height;
                 mousePosition.current = [x, y];
-            } else {
+            }
+            else {
                 mousePosition.current = [0, 0];
             }
             mouseButtonsDown.current = buttons;
@@ -228,12 +229,12 @@ export class ShaderCanvas {
             buttons: 0, clientX: 0, clientY: 0
         }));
 
-        useAnimation((currTime) => {
+        useAnimation((currentTime) => {
             canvas.setCanvasSize(canvasElement.clientWidth, canvasElement.clientHeight);
             canvas.setUniforms(getUniforms({
                 canvas,
-                currentTime: currTime,
-                mousePosition: [...mousePosition.current],
+                currentTime,
+                mousePosition: mousePosition.current,
                 mouseButtonsDown: mouseButtonsDown.current
             }));
             canvas.draw();
