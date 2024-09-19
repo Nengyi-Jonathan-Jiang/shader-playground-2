@@ -20,3 +20,16 @@ div#code-body {
     white-space: nowrap;
     flex-grow:   1;
 }
+
+button#recompile-button {
+    flex-shrink: 0;
+    background-color: var(--color-purple);
+    font-weight: bolder;
+    margin: 1ex -1ex -1ex -1ex;
+    padding: 1ex;
+    text-shadow: 0 0 2px var(--color-dark);
+}
+
+button#recompile-button:hover {
+    background-color: var(--color-blue);
+}

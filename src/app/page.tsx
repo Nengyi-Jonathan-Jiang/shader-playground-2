@@ -5,9 +5,9 @@ import React, {useEffect, useRef, useState} from "react";
 import {HorizontalResizableDoublePane, VerticalResizableDoublePane} from "@/resizable/resizable";
 import {ShaderCodeEditor} from "@/app/components/glslEditor";
 import {ShaderCanvas, ShaderCanvasUniformData} from "@/app/webgl/ShaderCanvas";
-import {CustomUniformData, UniformEditor} from "@/app/components/uniformsEditor";
-import {render} from "react-dom";
+import {ScriptableUniformsEditor} from "@/app/components/scriptableUniformsEditor";
 import {useManualRerender} from "@/util/hooks";
+import {ReadonlyScriptableUniform} from "@/app/components/scriptableUniform";
 
 const vertShader = `#version 300 es
 layout (location = 0) in vec2 a_position;
@@ -25,34 +25,34 @@ const defaultMainCode = `void main(){
 
 
 const builtinUniformData = [
-    new CustomUniformData(
+    new ReadonlyScriptableUniform(
+        -1,
         "aspectRatio", "float",
         "// This is a built in uniform",
         "    return canvas.height / canvas.width",
-        false
     ),
-    new CustomUniformData(
+    new ReadonlyScriptableUniform(
+        -2,
         "elapsedTime", "float",
         "// This is a built in uniform\nlet startTime = -1;",
-        "    if(startTime == -1) {\n        startTime = time;\n    }\n    return time - startTime;",
-        false
+        "    if(startTime == -1) {\n        startTime = time;\n    }\n    return time - startTime;"
     ),
-    new CustomUniformData(
+    new ReadonlyScriptableUniform(
+        -3,
         "mousePosition", "vec2",
         "// This is a built in uniform",
-        "    return mousePosition",
-        false
+        "    return mousePosition"
     ),
-    new CustomUniformData(
+    new ReadonlyScriptableUniform(
+        -4,
         "mouseButtons", "int",
         "// This is a built in uniform",
-        "    return mouseButtons",
-        false
+        "    return mouseButtons"
     ),
 ];
 builtinUniformData.forEach(i => i.evaluateSource());
 
-function generateHeaderCodeForUniforms(uniformsEditor: UniformEditor) {
+function generateHeaderCodeForUniforms(uniformsEditor: ScriptableUniformsEditor) {
     return `#version 300 es\nprecision mediump float;\nin vec2 fragCoord;\nout vec4 fragColor;\n\n${
         uniformsEditor.data.map(({name, type}) => `uniform ${type} ${name};`).join('\n')
     }\n`;
@@ -64,7 +64,7 @@ export default function Home() {
     const [shaderCanvas] = useState(() => new ShaderCanvas());
 
     const [uniformsEditor] = useState(() => {
-        const editor = new UniformEditor();
+        const editor = new ScriptableUniformsEditor();
         for (const i of builtinUniformData) {
             editor.addDirect(i);
         }
@@ -76,18 +76,25 @@ export default function Home() {
 
     // On recompile
     const startTime = useRef(-1);
-    useEffect(() => {
-        startTime.current = -1;
-    }, [mainCode, headerCode]);
+    const [errors] = useState(() => new Map<number, string[]>);
 
-    shaderCanvas.setProgram(vertShader, headerCode + '\n' + mainCode);
-    const errors = new Map<number, string[]>;
-    for (const {line, message} of shaderCanvas.errors) {
-        if (!errors.has(line)) {
-            errors.set(line, []);
+    const recompile = () => {
+        errors.clear();
+
+        startTime.current = -1;
+        shaderCanvas.setProgram(vertShader, headerCode + '\n' + mainCode);
+        for (const {line, message} of shaderCanvas.errors) {
+            if (!errors.has(line)) {
+                errors.set(line, []);
+            }
+            (errors.get(line) as string[]).push(message);
         }
-        (errors.get(line) as string[]).push(message);
+        rerender();
     }
+
+    useEffect(() => {
+        errors.clear();
+    }, [mainCode, headerCode]);
 
     const getUniforms = ({canvas, currentTime, mousePosition, mouseButtonsDown}: {
         canvas: ShaderCanvas,
@@ -128,10 +135,11 @@ export default function Home() {
                             setMainCode={setMainCode}
                             headerCode={headerCode}
                             errors={errors}
+                            recompile={recompile}
                         />
                     </div>
                 } bottom={
-                    <UniformEditor.Renderer editor={uniformsEditor} rerenderParent={rerender}/>
+                    <ScriptableUniformsEditor.Renderer editor={uniformsEditor} rerenderParent={rerender}/>
                 }/>
             } right={
                 <div id="canvas-container">

@@ -13,6 +13,8 @@ export interface ShaderCanvasUniformTypeMap {
     mat2: readonly number[],
     mat3: readonly number[],
     mat4: readonly number[],
+    sampler2D: number,
+    samplerCube: number,
 }
 
 export type ShaderCanvasUniformType = keyof ShaderCanvasUniformTypeMap;
