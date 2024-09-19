@@ -1,0 +1,35 @@
+// GLSL only
+
+#define NUM_ITERATIONS 8
+
+int getQuadrant(vec2 f) {
+    return f.x <= 0. ? f.y <= 0. ? 1 : 2 : f.y >= 0. ? 3 : 4;
+}
+
+vec2 scramble(vec2 f) {
+    switch(getQuadrant(f)) {
+        case 1: return f.yx * 2.0 + 1.0;
+        case 2: return f * 2.0 + vec2(1.0, -1.0);
+        case 3: return f * vec2(-2.0, 2.0) + vec2(1.0, -1.0);
+        case 4: return f.yx * vec2(2.0, -2.0) + 1.0;
+    }
+    discard;
+}
+
+bool test(vec2 v, bool straight) {
+    float x = v.x, y = v.y;
+    return straight ? abs(y) <= 0.5 : abs(abs(x + y) + abs(x - y - 2.0) - 2.0) <= 1.0;
+}
+
+void main() {
+    if(abs(fragCoord.x) >= 1.0) discard;
+    vec2 v = fragCoord;
+    bool straight = false;
+    for(int i = 0; i < NUM_ITERATIONS; i++) {
+        int quad = getQuadrant(v);
+        v = scramble(v);
+        straight = straight ? false : quad == 1;
+    }
+
+    fragColor = vec4(vec3(test(v, straight) ? 1.0 : 0.0), 1.0);
+}
