@@ -23,7 +23,6 @@ const defaultMainCode = `void main(){
     fragColor = vec4(0.5 + 0.5 * cos(fragCoord.xyx + vec3(0,2,4)), 1.0);
 }`
 
-
 const builtinUniformData = [
     new ReadonlyScriptableUniform(
         -1,

@@ -11,7 +11,10 @@ export const scriptableUniformTypes: ScriptableUniformType[] = [
 ];
 
 export type ScriptableUniformDataJSON = {
-    name: string, type: ScriptableUniformType, initSrc: string, periodicSrc: string;
+    name: string,
+    type: ScriptableUniformType,
+    initSrc: string,
+    periodicSrc: string;
 };
 
 export class ScriptableUniformData {
@@ -31,7 +34,7 @@ export class ScriptableUniformData {
         this.periodicSrc = periodicSrc;
     }
 
-    static fromJSON(json: ScriptableUniformDataJSON) {
-
+    static fromJSON({name, type, initSrc, periodicSrc}: ScriptableUniformDataJSON) {
+        return new ScriptableUniformData(name, type, initSrc, periodicSrc);
     }
 }
