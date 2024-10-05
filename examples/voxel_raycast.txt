@@ -1,0 +1,50 @@
+bool hasVoxelAt(ivec3 pos) {
+    float x = float(pos.x), y = float(pos.y), z = float(pos.z);
+    return x * x + y * y + z * z >= pow(60.0, 2.0);
+}
+
+struct stepResult {
+    ivec3 voxelPos;
+    vec3 normal;
+    vec3 newPos;
+};
+
+stepResult stepToNextVoxel(vec3 pos, vec3 direction) {
+    vec3 u = (floor(1.0 + pos * sign(direction)) * sign(direction) - pos) / direction;
+    float d = min(min(u.x, u.y), u.z);
+    
+    vec3 normal = normalize(sign(direction) * vec3(
+        u.x == d ? 1 : 0, 
+        u.y == d ? 1 : 0, 
+        u.z == d ? 1 : 0
+    ));
+
+    pos += d * direction;
+    return stepResult(
+        ivec3(pos + direction * 0.000000001),
+        normal,
+        pos
+    );
+}
+
+float raycast(vec3 start, vec3 ray) {
+    for(int i = 0; i < 200; i++) {
+        stepResult r = stepToNextVoxel(start, ray);
+        start = r.newPos;
+        vec3 normal = r.normal;
+        if(hasVoxelAt(r.voxelPos)) {
+            return 0.6 + 0.4 * dot(normal, normalize(vec3(1, -2, 3)));
+        }
+    }
+    return 1.0;
+}
+
+void main(){
+   float cam_distance = 1.;
+   vec3 ray = normalize(vec3(fragCoord, cam_distance));
+   float phi = mousePosition.x * 3.14, theta = mousePosition.y * 1.5707;
+   ray = ray * vec3(1, cos(theta), cos(theta)) + ray.xzy * vec3(0, sin(theta), -sin(theta));
+   ray = ray * vec3(cos(phi), 1, cos(phi)) + ray.zyx * vec3(sin(phi), 0, -sin(phi));
+   float v = raycast(vec3(0), ray);
+   fragColor = vec4(vec3(v), 1.0);
+}
