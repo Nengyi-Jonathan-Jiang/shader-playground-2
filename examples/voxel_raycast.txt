@@ -1,6 +1,6 @@
 bool hasVoxelAt(ivec3 pos) {
-    float x = float(pos.x), y = float(pos.y), z = float(pos.z);
-    return x * x + y * y + z * z >= pow(60.0, 2.0);
+    float x = float(pos.x) / 5.0, y = float(pos.y) / 5.0, z = float(pos.z) / 5.0;
+    return sin(x) * sin(x) + sin(y) * sin(y) + sin(z) * sin(z) >= 1.5;
 }
 
 struct stepResult {
@@ -27,16 +27,22 @@ stepResult stepToNextVoxel(vec3 pos, vec3 direction) {
     );
 }
 
-float raycast(vec3 start, vec3 ray) {
+vec3 raycast(vec3 start, vec3 ray) {
     for(int i = 0; i < 200; i++) {
         stepResult r = stepToNextVoxel(start, ray);
         start = r.newPos;
         vec3 normal = r.normal;
         if(hasVoxelAt(r.voxelPos)) {
-            return 0.6 + 0.4 * dot(normal, normalize(vec3(1, -2, 3)));
+            // Calculate the distance to the edge of the voxel
+            vec3 d = abs(mod(start + 0.5, 1.0) - 0.5) / (1.0 - abs(normal));
+            float d2 = min(d.x, min(d.y, d.z)) * 15.;
+            
+            float t = d2 <= 1. ? pow(1.0 - d2, 2.0) : 0.0;
+            vec3 s = vec3(0.6 + 0.4 * dot(normal, normalize(vec3(1, -2, 3))));
+            return t * vec3(0.0, 1.0, 1.0) + (1. - t) * s;
         }
     }
-    return 1.0;
+    return vec3(0.8, 0.9, 1.0);
 }
 
 void main(){
@@ -45,6 +51,6 @@ void main(){
    float phi = mousePosition.x * 3.14, theta = mousePosition.y * 1.5707;
    ray = ray * vec3(1, cos(theta), cos(theta)) + ray.xzy * vec3(0, sin(theta), -sin(theta));
    ray = ray * vec3(cos(phi), 1, cos(phi)) + ray.zyx * vec3(sin(phi), 0, -sin(phi));
-   float v = raycast(vec3(0), ray);
-   fragColor = vec4(vec3(v), 1.0);
+   vec3 v = raycast(vec3(0), ray);
+   fragColor = vec4(v, 1.0);
 }
