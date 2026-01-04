@@ -25,6 +25,10 @@ div:where(.glsl, .js) pre > span.builtin-var {
     color: var(--color-orange);
 }
 
+div:where(.glsl, .js) pre > span.provided {
+    color: var(--color-yellow);
+}
+
 div:where(.glsl, .js) pre > span:where(.reserved, .error-char, .identifier) {
     color: var(--color-light);
 }

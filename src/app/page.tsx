@@ -8,6 +8,7 @@ import {ShaderCanvas, ShaderCanvasUniformData} from "@/app/webgl/ShaderCanvas";
 import {ScriptableUniformsEditor} from "@/app/components/scriptableUniformsEditor";
 import {useManualRerender} from "@/util/hooks";
 import {ReadonlyScriptableUniform} from "@/app/components/scriptableUniform";
+import {providedCode} from "@/app/shaderProvidedFunctions";
 
 const vertShader = `#version 300 es
 layout (location = 0) in vec2 a_position;
@@ -28,25 +29,25 @@ const builtinUniformData = [
         -1,
         "aspectRatio", "float",
         "// This is a built in uniform",
-        "    return canvas.height / canvas.width",
+        "    // canvas is a {width: number, height:number} describing the current size of the output window.\n\n    return canvas.height / canvas.width",
     ),
     new ReadonlyScriptableUniform(
         -2,
         "elapsedTime", "float",
         "// This is a built in uniform\nlet startTime = -1;",
-        "    if(startTime == -1) {\n        startTime = time;\n    }\n    return time - startTime;"
+        "    // time is a number describing the current time in seconds.\n\n    if(startTime == -1) {\n        startTime = time;\n    }\n    return time - startTime;"
     ),
     new ReadonlyScriptableUniform(
         -3,
         "mousePosition", "vec2",
         "// This is a built in uniform",
-        "    return mousePosition"
+        "    // mouse is a {position: [number, number], buttons: number}.\n    // The position describes the position of the mouse on the\n    // canvas in the coordinate system of the shader. If the\n    // mouse is outside the canvas, this is set to [0, 0].\n\n    return mouse.position"
     ),
     new ReadonlyScriptableUniform(
         -4,
         "mouseButtons", "int",
         "// This is a built in uniform",
-        "    return mouseButtons"
+        "    // mouse is a {position: [number, number], buttons: number}.\n    // buttons is an integer representing the current state of\n    // the mouse buttons as given by JavaScript's\n    // MouseEvent.buttons\n\n    return mouse.buttons"
     ),
 ];
 builtinUniformData.forEach(i => i.evaluateSource());
@@ -81,8 +82,23 @@ export default function Home() {
         errors.clear();
 
         startTime.current = -1;
-        shaderCanvas.setProgram(vertShader, headerCode + '\n' + mainCode);
-        for (const {line, message} of shaderCanvas.errors) {
+        shaderCanvas.setProgram(vertShader, headerCode + '\n' + providedCode + '\n' + mainCode);
+        const numHeaderLines = headerCode.replace(/[^\n]/g, '').length + 1;
+        const numBuiltinLines = providedCode.replace(/[^\n]/g, '').length + 1;
+
+        for (let {line, message} of shaderCanvas.errors) {
+            if (line >= numHeaderLines) {
+                if (line >= numHeaderLines + numBuiltinLines) {
+                    line -= numBuiltinLines;
+                }
+                else {
+                    console.error(
+                        `ERROR IN BUILTIN CODE @ ${line - numHeaderLines + 2}: \n${message}`
+                    );
+                    continue;
+                }
+            }
+
             if (!errors.has(line)) {
                 errors.set(line, []);
             }
@@ -109,7 +125,15 @@ export default function Home() {
         uniformsEditor.data.forEach(i => {
             if (i.shaderUniformCallback !== null) {
                 try {
-                    const value = i.shaderUniformCallback(canvas, currentTime, mousePosition, mouseButtonsDown);
+                    const value = i.shaderUniformCallback(
+                        {
+                            width: canvas.width,
+                            height: canvas.height,
+                        }, currentTime, {
+                            position: mousePosition,
+                            buttons: mouseButtonsDown
+                        }
+                    );
                     res.push({
                         name: i.name,
                         type: i.type,

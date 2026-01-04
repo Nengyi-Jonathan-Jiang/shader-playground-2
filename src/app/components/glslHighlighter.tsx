@@ -3,6 +3,7 @@ import {CodeHighlighter} from "@/codeEditor/codeHighlighter";
 
 import './highlighted.css'
 import {HighlighterWithErrors} from "@/codeEditor/highlighterWithErrors";
+import {providedNames} from "@/app/shaderProvidedFunctions";
 
 function sanitizeForRegex(str: string): string {
     return str.replaceAll(/[$-/?[-^{|}]/g, '\\$&');
@@ -82,6 +83,10 @@ const builtinFunctionRegex = toCombinedRegex(
 );
 const builtinVarRegex = toCombinedRegex("");
 
+const providedFunctionRegex = toCombinedRegex(
+    ...providedNames
+);
+
 const reservedKeywordRegex = toCombinedRegex(
     "attribute", "buffer", "shared", "coherent", "volatile", "restrict", "readonly", "writeonly",
     "atomic_uint", "layout", "centroid", "flat", "smooth", "noperspective", "patch", "sample", "do",
@@ -121,6 +126,7 @@ export function GLSLHighlighter({value, errors}: {
                 'builtin-func': builtinFunctionRegex,
                 'builtin-var': builtinVarRegex,
                 'reserved': reservedKeywordRegex,
+                'provided': providedFunctionRegex,
                 'literal': literalsRegex,
                 'operator': operatorsRegex,
                 'punctuation': punctuationRegex,

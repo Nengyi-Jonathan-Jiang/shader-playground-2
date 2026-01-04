@@ -1,14 +1,10 @@
-import {ShaderCanvas, ShaderCanvasUniformTypeMap} from "@/app/webgl/ShaderCanvas";
+import {ShaderCanvasUniformTypeMap} from "@/app/webgl/ShaderCanvas";
 import React, {ReactNode} from "react";
 import {JSHighlighter} from "@/app/components/jsHighlighter";
 import {Select} from "@/util/select";
 import {CodeEditor} from "@/codeEditor/codeEditor";
 import {evalStatementsInContext} from "@/eval/eval";
-import {
-    ScriptableUniformData,
-    ScriptableUniformType,
-    scriptableUniformTypes
-} from "@/app/data/scriptableUniformData";
+import {ScriptableUniformData, ScriptableUniformType, scriptableUniformTypes} from "@/app/data/scriptableUniformData";
 
 export abstract class ScriptableUniform {
     protected _shaderUniformCallback: ShaderUniformCallback | null = null;
@@ -34,7 +30,7 @@ export abstract class ScriptableUniform {
             this.name
         }", "${
             this.type
-        }", (canvas, time, mousePosition, mouseButtons) => {\n${
+        }", (canvas, time, mouse) => {\n${
             this.periodicSrc
         }\n});`
     }
@@ -49,7 +45,7 @@ export abstract class ScriptableUniform {
                 ) => {
                     this._shaderUniformCallback = callBack;
                 },
-                ...Math
+                ...Object.fromEntries(Object.getOwnPropertyNames(Math).map(i => [i, (Math as any)[i]]))
             });
         } catch (e) {
             console.error(e);
@@ -74,7 +70,7 @@ export abstract class ScriptableUniform {
             <div className='js'>
                 {data.renderInitSrc({rerender})}
                 <JSHighlighter value={
-                    `registerUniform("${data.name}", "${data.type}", (canvas, time, mousePosition, mouseButtons) => {`
+                    `registerUniform("${data.name}", "${data.type}", (canvas, time, mouse) => {`
                 }/>
                 {data.renderPeriodicSrc({rerender})}
                 <JSHighlighter value='});'/>
@@ -218,8 +214,7 @@ export class EditableScriptableUniform extends ScriptableUniform {
 }
 
 type ShaderUniformCallback = (
-    canvas: ShaderCanvas,
+    canvas: { width: number, height: number },
     time: number,
-    mousePosition: readonly [number, number],
-    mouseButtons: number
+    mouse: { position: readonly [number, number], buttons: number }
 ) => ShaderCanvasUniformTypeMap[ScriptableUniformType];
