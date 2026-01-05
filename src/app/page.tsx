@@ -1,12 +1,12 @@
 "use client"
 
 import "./page.css";
-import React, {useEffect, useRef, useState} from "react";
+import React, {useEffect, useMemo, useRef, useState} from "react";
 import {HorizontalResizableDoublePane, VerticalResizableDoublePane} from "@/resizable/resizable";
 import {ShaderCodeEditor} from "@/app/components/glslEditor";
 import {ShaderCanvas, ShaderCanvasUniformData} from "@/app/webgl/ShaderCanvas";
 import {ScriptableUniformsEditor} from "@/app/components/scriptableUniformsEditor";
-import {useManualRerender} from "@/util/hooks";
+import {useListenerOnWindow, useManualRerender} from "@/util/hooks";
 import {ReadonlyScriptableUniform} from "@/app/components/scriptableUniform";
 import {providedCode} from "@/app/shaderProvidedFunctions";
 
@@ -61,18 +61,46 @@ function generateHeaderCodeForUniforms(uniformsEditor: ScriptableUniformsEditor)
 export default function Home() {
     const rerender = useManualRerender();
 
-    const [shaderCanvas] = useState(() => new ShaderCanvas());
+    const shaderCanvas = useMemo(() => new ShaderCanvas(), []);
 
-    const [uniformsEditor] = useState(() => {
+    const uniformsEditor = useMemo(() => {
         const editor = new ScriptableUniformsEditor();
         for (const i of builtinUniformData) {
             editor.addDirect(i);
         }
         return editor;
-    });
+    }, []);
 
     const [mainCode, setMainCode] = useState(defaultMainCode);
     const headerCode = generateHeaderCodeForUniforms(uniformsEditor);
+
+    const exportCanvas = useMemo(() => (download = false) => {
+        // Force a new draw to make sure the canvas doesn't get cleared before we get the download
+        shaderCanvas.draw();
+        shaderCanvas.canvasElement.toBlob(blob => {
+            if (blob === null) {
+                alert('Could not download canvas');
+                return;
+            }
+            const dummy = document.createElement('a');
+            dummy.href = URL.createObjectURL(blob);
+            if (download) {
+                console.log('download');
+                dummy.download = 'shader_creation.png';
+            }
+            else {
+                console.log('not download')
+                dummy.target = '_blank';
+            }
+            dummy.click();
+        })
+    }, [shaderCanvas]);
+
+    useListenerOnWindow('keydown', useMemo(() => (e: KeyboardEvent) => {
+        if (!e.ctrlKey || e.key.toLowerCase() !== 'e') return;
+        e.preventDefault();
+        exportCanvas(e.shiftKey);
+    }, []));
 
     // On recompile
     const startTime = useRef(-1);
@@ -158,7 +186,10 @@ export default function Home() {
                             setMainCode={setMainCode}
                             headerCode={headerCode}
                             errors={errors}
-                            recompile={recompile}
+                            buttons={[
+                                <button onClick={recompile}>Run Shader</button>,
+                                <button onClick={() => exportCanvas()}>Export Canvas</button>
+                            ]}
                         />
                     </div>
                 } bottom={

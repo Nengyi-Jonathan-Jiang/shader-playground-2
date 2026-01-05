@@ -2,13 +2,14 @@ import {GLSLHighlighter} from "@/app/components/glslHighlighter";
 
 import "./glslEditor.css";
 import {CodeEditor} from "@/codeEditor/codeEditor";
+import {Fragment, ReactElement} from "react";
 
-export function ShaderCodeEditor({mainCode, setMainCode, headerCode, errors, recompile}: {
+export function ShaderCodeEditor({mainCode, setMainCode, headerCode, errors, buttons}: {
     mainCode: string,
     setMainCode: (mainCode: string) => void,
     headerCode: string,
     errors: Map<number, string[]>,
-    recompile: () => void
+    buttons: ReactElement[],
 }) {
     const headerCodeErrors = new Map<number, string[]>;
     const mainCodeErrors = new Map<number, string[]>;
@@ -17,7 +18,8 @@ export function ShaderCodeEditor({mainCode, setMainCode, headerCode, errors, rec
     for (const [line, lineErrors] of errors ?? new Map) {
         if (line < numHeaderCodeLines) {
             headerCodeErrors.set(line, lineErrors);
-        } else {
+        }
+        else {
             mainCodeErrors.set(line - numHeaderCodeLines, lineErrors);
         }
     }
@@ -38,6 +40,14 @@ export function ShaderCodeEditor({mainCode, setMainCode, headerCode, errors, rec
                             Highlighter={GLSLHighlighter}/>
             </div>
         </div>
-        <button id="recompile-button" onClick={recompile}>Run Shader</button>
+        <div id="bottom-buttons">
+            {
+                new Array(buttons.length * 2 - 1).fill(null).map((_, i) => <Fragment key={i}>
+                    {
+                        i % 2 === 0 ? buttons[i / 2] : <div className='button-divider'/>
+                    }
+                </Fragment>)
+            }
+        </div>
     </div>
 }

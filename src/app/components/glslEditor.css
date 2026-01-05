@@ -21,15 +21,28 @@ div#code-body {
     flex-grow:   1;
 }
 
-button#recompile-button {
+div#bottom-buttons {
     flex-shrink: 0;
-    background-color: var(--color-purple);
-    font-weight: bolder;
     margin: 1ex -1ex -1ex -1ex;
-    padding: 1ex;
-    text-shadow: 0 0 2px var(--color-dark);
+    display: flex;
+    position: sticky;
+    left: -1ex;
 }
 
-button#recompile-button:hover {
+div#bottom-buttons > button {
+    flex-grow: 1;
+    font-weight: bolder;
+    padding: 1ex;
+    text-shadow: 0 0 2px var(--color-dark);
+    background-color: var(--color-purple);
+}
+
+div#bottom-buttons > button:hover {
     background-color: var(--color-blue);
+}
+
+div#bottom-buttons > .button-divider {
+    flex-grow: 0;
+    flex-shrink: 0;
+    width: 2px;
 }
