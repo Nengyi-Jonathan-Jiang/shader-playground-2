@@ -7,7 +7,11 @@ import {ShaderCodeEditor} from "@/app/components/glslEditor";
 import {ShaderCanvas, ShaderCanvasUniformData} from "@/app/webgl/ShaderCanvas";
 import {ScriptableUniformsEditor} from "@/app/components/scriptableUniformsEditor";
 import {useListenerOnWindow, useManualRerender} from "@/util/hooks";
-import {ReadonlyScriptableUniform} from "@/app/components/scriptableUniform";
+import {
+    EditableScriptableUniform,
+    ReadonlyScriptableUniform,
+    ScriptableUniform
+} from "@/app/components/scriptableUniform";
 import {providedCode} from "@/app/shaderProvidedFunctions";
 
 const vertShader = `#version 300 es
@@ -20,8 +24,66 @@ void main(){
     fragCoord = vec2(1.0 / aspectRatio, 1.0) * a_position;
 }`;
 
-const defaultMainCode = `void main(){
-    fragColor = vec4(0.5 + 0.5 * cos(fragCoord.xyx + vec3(0,2,4)), 1.0);
+const defaultMainCode = `bool hasVoxelAt(ivec3 pos) {
+    float x = float(pos.x) / 5.0, y = float(pos.y) / 5.0, z = float(pos.z) / 5.0;
+    return sin(x) * sin(x) + sin(y) * sin(y) + sin(z) * sin(z) >= 1.5;
+}
+
+struct stepResult {
+    ivec3 voxelPos;
+    vec3 normal;
+    vec3 newPos;
+};
+
+stepResult stepToNextVoxel(vec3 pos, vec3 direction) {
+    vec3 u = (floor(1.0 + pos * sign(direction)) * sign(direction) - pos) / direction;
+    float d = min(min(u.x, u.y), u.z);
+    
+    vec3 normal = normalize(sign(direction) * vec3(
+        u.x == d ? 1 : 0, 
+        u.y == d ? 1 : 0, 
+        u.z == d ? 1 : 0
+    ));
+
+    pos += d * direction;
+    return stepResult(
+        ivec3(pos + direction * 0.000000001),
+        normal,
+        pos
+    );
+}
+
+vec3 fog_color = vec3(0.5, 0.75, 1.0);
+
+vec3 raycast(vec3 start, vec3 ray) {
+    for(int i = 0; i < 400; i++) {
+        stepResult r = stepToNextVoxel(start, ray);
+        start = r.newPos;
+        vec3 normal = r.normal;
+        if(hasVoxelAt(r.voxelPos)) {
+            vec3 d = abs(mod(start + 0.5, 1.0) - 0.5) / (1.0 - abs(normal)) / distance(cameraPos, start);
+            float d2 = min(d.x, min(d.y, d.z)) * 500.;
+            
+            float t = d2 <= 1. ? 0.0 : 1.0;
+            vec3 faceLight = vec3(0.6 + 0.4 * dot(normal, normalize(vec3(1, -2, 3))));
+
+            vec3 color = t * faceLight;
+            float fog_amount = pow(1.0 + 0.002 * distance(cameraPos, start), -4.0);
+
+            return color * fog_amount + fog_color * (1.0 - fog_amount);
+        }
+    }
+    return fog_color;
+}
+
+void main(){
+   float cam_distance = 1.;
+   vec3 ray = normalize(vec3(fragCoord, cam_distance));
+   float phi = mousePosition.x * 3.14, theta = mousePosition.y * 1.5707;
+   ray = ray * vec3(1, cos(theta), cos(theta)) + ray.xzy * vec3(0, sin(theta), -sin(theta));
+   ray = ray * vec3(cos(phi), 1, cos(phi)) + ray.zyx * vec3(sin(phi), 0, -sin(phi));
+   vec3 v = raycast(cameraPos, ray);
+   fragColor = vec4(v, 1.0);
 }`
 
 const builtinUniformData = [
@@ -49,6 +111,27 @@ const builtinUniformData = [
         "// This is a built in uniform",
         "    // mouse is a {position: [number, number], buttons: number}.\n    // buttons is an integer representing the current state of\n    // the mouse buttons as given by JavaScript's\n    // MouseEvent.buttons\n\n    return mouse.buttons"
     ),
+    new EditableScriptableUniform(
+        "cameraPos", "vec3",
+        "// Initialization code here...\n" +
+        "let pos = [0, 0, 0];\n" +
+        "let lastFrameTime = 0;",
+        "    let [dx, dy, dz] = [0, 0, 1];\n" +
+        "    \n" +
+        "    const phi = mouse.position[0] * 3.14, theta = mouse.position[1] * 1.5707;\n" +
+        "\n" +
+        "    [dx, dy, dz] = [dx, dy * cos(theta) + dz * sin(theta), dz * cos(theta) - dy * sin(theta)];\n" +
+        "    [dx, dy, dz] = [dx * cos(phi) + dz * sin(phi), dy, dz * cos(phi) - dx * sin(phi)];\n" +
+        "\n" +
+        "    const elapsedTime = (time - lastFrameTime) * 10;\n" +
+        "    lastFrameTime = time;\n" +
+        "    \n" +
+        "    if(mouse.buttons != 0) {\n" +
+        "        pos = [pos[0] + dx * elapsedTime, pos[1] + dy * elapsedTime, pos[2] + dz * elapsedTime]\n" +
+        "    }\n" +
+        "\n" +
+        "    return pos;"
+    )
 ];
 builtinUniformData.forEach(i => i.evaluateSource());
 

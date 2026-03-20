@@ -27,6 +27,8 @@ div#bottom-buttons {
     display: flex;
     position: sticky;
     left: -1ex;
+    bottom: -0.5em;
+    z-index: 100;
 }
 
 div#bottom-buttons > button {
